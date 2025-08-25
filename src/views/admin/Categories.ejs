@@ -1,0 +1,198 @@
+<h1 class="page-title">
+    <i class="bi bi-tags me-2"></i>Category Management
+</h1>
+
+<!-- Create Category Section -->
+<div class="row mb-4">
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-plus-circle me-2"></i>Add New Category
+                </h5>
+            </div>
+            <div class="card-body">
+                <form id="createCategoryForm">
+                    <div class="mb-3">
+                        <label for="categoryName" class="form-label">Category Name</label>
+                        <input type="text" class="form-control" id="categoryName" name="name" required>
+                        <div class="invalid-feedback"></div>
+                    </div>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-plus me-1"></i>Create Category
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Categories Table -->
+<div class="card">
+    <div class="card-header">
+        <h5 class="card-title mb-0">
+            <i class="bi bi-list me-2"></i>All Categories
+            <span class="badge bg-secondary ms-2"><%= typeof categories !== 'undefined' ? categories.length : 0 %></span>
+        </h5>
+    </div>
+    <div class="card-body">
+        <% if (typeof categories === 'undefined' || categories.length === 0) { %>
+            <div class="text-center py-4">
+                <i class="bi bi-tags fs-1 text-muted"></i>
+                <p class="text-muted mt-2">No categories found. Create your first category above.</p>
+            </div>
+        <% } else { %>
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead class="table-light">
+                        <tr>
+                            <th style="width: 80px;">ID</th>
+                            <th>Category Name</th>
+                            <th>Created</th>
+                            <th style="width: 120px;">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <% if (typeof categories !== 'undefined' && categories) { categories.forEach(category => { %>
+                            <tr id="category-<%= category.id %>">
+                                <td><%= category.id %></td>
+                                <td>
+                                    <strong><%= category.name %></strong>
+                                </td>
+                                <td>
+                                    <% if (category.createdAt) { %>
+                                        <small class="text-muted">
+                                            <%= new Date(category.createdAt).toLocaleDateString() %>
+                                        </small>
+                                    <% } else { %>
+                                        <small class="text-muted">N/A</small>
+                                    <% } %>
+                                </td>
+                                <td>
+                                    <button class="btn btn-sm btn-outline-danger" 
+                                            onclick="deleteCategory(<%= category.id %>, '<%= category.name %>')"
+                                            title="Delete Category">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                        <% }); } %>
+                    </tbody>
+                </table>
+            </div>
+        <% } %>
+    </div>
+</div>
+
+<!-- Success/Error Toast -->
+<div class="toast-container position-fixed top-0 end-0 p-3">
+    <div id="alertToast" class="toast" role="alert">
+        <div class="toast-header">
+            <i class="bi bi-check-circle-fill text-success me-2" id="toastIcon"></i>
+            <strong class="me-auto" id="toastTitle">Success</strong>
+            <button type="button" class="btn-close" data-bs-dismiss="toast"></button>
+        </div>
+        <div class="toast-body" id="toastMessage"></div>
+    </div>
+</div>
+
+<script>
+$(document).ready(function() {
+    // Create category form submission
+    $('#createCategoryForm').on('submit', function(e) {
+        e.preventDefault();
+        
+        const formData = {
+            name: $('#categoryName').val().trim()
+        };
+        
+        if (!formData.name) {
+            showError('#categoryName', 'Category name is required');
+            return;
+        }
+        
+        $.ajax({
+            url: '/admin/categories/create',
+            method: 'POST',
+            data: formData,
+            success: function(response) {
+                showToast('success', 'Success', response.message);
+                $('#createCategoryForm')[0].reset();
+                // Reload page to show new category
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1500);
+            },
+            error: function(xhr) {
+                const errorMessage = xhr.responseJSON?.message || 'Error creating category';
+                showError('#categoryName', errorMessage);
+            }
+        });
+    });
+});
+
+function deleteCategory(categoryId, categoryName) {
+    if (!confirm(`Are you sure you want to delete "${categoryName}"? This action cannot be undone.`)) {
+        return;
+    }
+    
+    $.ajax({
+        url: '/admin/categories/delete',
+        method: 'POST',
+        data: { categoryId: categoryId },
+        success: function(response) {
+            showToast('success', 'Success', response.message);
+            // Remove the row from table
+            $(`#category-${categoryId}`).fadeOut(300, function() {
+                $(this).remove();
+                
+                // Check if no categories left
+                if ($('tbody tr').length === 0) {
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1500);
+                }
+            });
+        },
+        error: function(xhr) {
+            const errorMessage = xhr.responseJSON?.message || 'Error deleting category';
+            showToast('error', 'Error', errorMessage);
+        }
+    });
+}
+
+function showError(fieldSelector, message) {
+    const field = $(fieldSelector);
+    field.addClass('is-invalid');
+    field.siblings('.invalid-feedback').text(message);
+    
+    field.on('input', function() {
+        $(this).removeClass('is-invalid');
+    });
+}
+
+function showToast(type, title, message) {
+    const toast = $('#alertToast');
+    const icon = $('#toastIcon');
+    const toastTitle = $('#toastTitle');
+    const toastMessage = $('#toastMessage');
+    
+    // Reset classes
+    icon.removeClass().addClass('bi me-2');
+    
+    // Set appropriate icon and color based on type
+    if (type === 'success') {
+        icon.addClass('bi-check-circle-fill text-success');
+    } else if (type === 'error') {
+        icon.addClass('bi-x-circle-fill text-danger');
+    } else if (type === 'info') {
+        icon.addClass('bi-info-circle-fill text-info');
+    }
+    
+    toastTitle.text(title);
+    toastMessage.text(message);
+    
+    const bsToast = new bootstrap.Toast(toast[0]);
+    bsToast.show();
+}
+</script>

@@ -1,0 +1,102 @@
+<!-- Welcome Section -->
+<div class="row mb-4">
+  <div class="col-12">
+    <div class="card bg-primary text-white">
+      <div class="card-body text-center py-5">
+        <i class="fas fa-pen-fancy fa-3x mb-4" style="opacity: 0.9;"></i>
+        <h2 class="card-title mb-4">Ready to Share Your Ideas?</h2>
+        <p class="card-text fs-5 mb-4">
+          <% if (typeof blogCount !== 'undefined' && blogCount > 0) { %>
+            You have <%= blogCount %> blog<%= blogCount === 1 ? '' : 's' %>! Keep sharing your thoughts with the world.
+          <% } else { %>
+            Start your blogging journey today! Share your thoughts, experiences, and insights with the world.
+          <% } %>
+        </p>
+        <a href="/user/blogs/create" class="btn btn-light btn-lg rounded-pill">
+          <i class="fas fa-plus me-2"></i>
+          <% if (typeof blogCount !== 'undefined' && blogCount > 0) { %>
+            Create New Blog
+          <% } else { %>
+            Create Your First Blog
+          <% } %>
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- Recent Blogs Section -->
+<% if (typeof recentBlogs !== 'undefined' && recentBlogs && recentBlogs.length > 0) { %>
+<div class="row mb-4">
+  <div class="col-12">
+    <div class="card">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">
+          <i class="fas fa-clock me-2"></i>Recent Blogs
+        </h5>
+        <a href="/user/my-blogs" class="btn btn-sm btn-outline-primary">View All</a>
+      </div>
+      <div class="card-body">
+        <div class="row">
+          <% recentBlogs.forEach(blog => { %>
+          <div class="col-md-6 mb-3">
+            <div class="card border-0 bg-light">
+              <div class="card-body">
+                <h6 class="card-title"><%= blog.title %></h6>
+                <p class="card-text text-muted small">
+                  <%= blog.content.length > 100 ? blog.content.substring(0, 100) + '...' : blog.content %>
+                </p>
+                <div class="d-flex justify-content-between align-items-center">
+                  <small class="text-muted">
+                    <i class="fas fa-calendar me-1"></i>
+                    <%= new Date(blog.createdAt).toLocaleDateString() %>
+                  </small>
+                  <% if (blog.Category) { %>
+                  <span class="badge bg-secondary"><%= blog.Category.name %></span>
+                  <% } %>
+                </div>
+              </div>
+            </div>
+          </div>
+          <% }); %>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<% } %>
+
+<!-- Quick stats or recent activity -->
+<div class="row mt-5">
+  <div class="col-md-4">
+    <div class="card text-center">
+      <div class="card-body">
+        <i class="fas fa-eye text-primary fa-2x mb-3"></i>
+        <h5 class="card-title">Explore</h5>
+        <p class="card-text">Discover amazing blogs from other writers</p>
+        <a href="/user/blogs" class="btn btn-outline-primary">View All Blogs</a>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card text-center">
+      <div class="card-body">
+        <i class="fas fa-edit text-success fa-2x mb-3"></i>
+        <h5 class="card-title">Write</h5>
+        <p class="card-text">Create and manage your own blog posts</p>
+        <a href="/user/my-blogs" class="btn btn-outline-success">My Blogs</a>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card text-center">
+      <div class="card-body">
+        <i class="fas fa-chart-line text-info fa-2x mb-3"></i>
+        <h5 class="card-title">Track</h5>
+        <p class="card-text">Monitor your blog performance and engagement</p>
+        <a href="/user/dashboard" class="btn btn-outline-info">Dashboard</a>
+      </div>
+    </div>
+  </div>
+</div>

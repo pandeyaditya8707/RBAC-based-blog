@@ -1,0 +1,67 @@
+<div class="row justify-content-center">
+  <div class="col-lg-8">
+    <div class="card shadow-sm">
+      <div class="card-header bg-primary text-white">
+        <h4 class="mb-0">
+          <i class="fas fa-edit me-2"></i>Edit Blog
+        </h4>
+      </div>
+      <div class="card-body">
+        <form action="/user/blogs/<%= blog.id %>/edit" method="POST">
+          <!-- Title -->
+          <div class="mb-3">
+            <label for="title" class="form-label">Blog Title</label>
+            <input 
+              type="text" 
+              id="title"
+              name="title" 
+              class="form-control" 
+              value="<%= blog.title %>" 
+              required
+            >
+          </div>
+
+          <!-- Content -->
+          <div class="mb-3">
+            <label for="content" class="form-label">Blog Content</label>
+            <textarea 
+              id="content"
+              name="content" 
+              rows="8" 
+              class="form-control" 
+              required
+            ><%= blog.content %></textarea>
+          </div>
+
+          <!-- Category Dropdown -->
+          <div class="mb-3">
+            <label for="category_id" class="form-label">Category</label>
+            <select id="category_id" name="category_id" class="form-select" required>
+              <option value="">-- Select Category --</option>
+              <% if (typeof categories !== 'undefined' && categories) { %>
+                <% categories.forEach(category => { %>
+                  <option 
+                    value="<%= category.id %>" 
+                    <%= (blog.category_id && blog.category_id == category.id) || (blog.Category && blog.Category.id === category.id) ? "selected" : "" %>
+                  >
+                    <%= category.name %>
+                  </option>
+                <% }) %>
+              <% } %>
+            </select>
+          </div>
+
+          <!-- Buttons -->
+          <div class="d-flex justify-content-between">
+            <a href="/user/my-blogs" class="btn btn-secondary">
+              <i class="fas fa-arrow-left me-1"></i>Cancel
+            </a>
+            <button type="submit" class="btn btn-primary">
+              <i class="fas fa-save me-1"></i>Update Blog
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,98 @@
+<h2 class="page-title">
+  <i class="fas fa-globe me-2"></i>All Blogs
+</h2>
+
+<% if (typeof error !== 'undefined' && error) { %>
+  <div class="alert alert-danger">
+    <i class="fas fa-exclamation-triangle me-2"></i><%= error %>
+  </div>
+<% } %>
+
+<% if (typeof blogs !== 'undefined' && blogs && blogs.length > 0) { %>
+  <div class="row">
+    <% blogs.forEach(blog => { %>
+      <div class="col-lg-6 mb-4" id="blog-<%= blog.id %>">
+        <div class="card h-100">
+          <div class="card-header">
+            <h5 class="card-title mb-0"><%= blog.title %></h5>
+          </div>
+          <div class="card-body">
+            <p class="card-text">
+              <%= blog.content.length > 200 ? blog.content.substring(0, 200) + '...' : blog.content %>
+            </p>
+            <% if (blog.Category) { %>
+              <span class="badge bg-secondary">
+                <i class="fas fa-tag me-1"></i><%= blog.Category.name %>
+              </span>
+            <% } %>
+          </div>
+          <div class="card-footer d-flex justify-content-between align-items-center">
+            <small class="text-muted">
+              <i class="fas fa-user me-1"></i>
+              By <%= blog.User ? blog.User.username : 'Unknown' %>
+              <br>
+              <% if (blog.created_at) { %>
+                <i class="fas fa-calendar me-1"></i>
+                <%= new Date(blog.created_at).toLocaleDateString() %>
+              <% } %>
+            </small>
+            <button class="btn btn-sm btn-outline-primary" 
+                    onclick="viewBlog(<%= blog.id %>)"
+                    title="View Full Blog">
+              <i class="fas fa-eye"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+    <% }); %>
+  </div>
+<% } else { %>
+  <div class="alert alert-info">
+    <i class="fas fa-info-circle me-2"></i>No blogs found.
+  </div>
+<% } %>
+
+<!-- View Blog Modal -->
+<div class="modal fade" id="viewBlogModal" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="modalBlogTitle">Blog Post</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div id="modalBlogMeta" class="mb-3"></div>
+        <div id="modalBlogContent"></div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  function viewBlog(blogId) {
+    const blogs = <%- JSON.stringify(typeof blogs !== 'undefined' ? blogs : []) %>;
+    const blog = blogs && blogs.find(b => b.id === blogId);
+    
+    if (blog) {
+      $('#modalBlogTitle').text(blog.title);
+      $('#modalBlogMeta').html(`
+        <div class="row">
+          <div class="col-md-4">
+            <strong>Author:</strong> ${blog.User ? blog.User.username : 'Unknown'}
+          </div>
+          <div class="col-md-4">
+            <strong>Category:</strong> ${blog.Category ? blog.Category.name : 'No Category'}
+          </div>
+           <div class="col-md-4">
+            <strong>Created:</strong> ${blog.created_at ? new Date(blog.created_at).toLocaleDateString() : 'N/A'}
+           </div>
+        </div>
+      `);
+      $('#modalBlogContent').html(`<div style="white-space: pre-wrap;">${blog.content}</div>`);
+      $('#viewBlogModal').modal('show');
+    }
+  }
+</script>

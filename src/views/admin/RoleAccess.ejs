@@ -1,0 +1,394 @@
+<h1 class="page-title">
+    <i class="bi bi-key me-2"></i>Role Access Management
+</h1>
+
+<!-- Create Role Access Section -->
+<div class="row mb-4">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-plus-circle me-2"></i>Add New Role Access
+                </h5>
+            </div>
+            <div class="card-body">
+                <form id="createRoleAccessForm">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="roleId" class="form-label">Role</label>
+                                <select class="form-select" id="roleId" name="roleId" required>
+                                    <option value="">Select Role</option>
+                                    <% roles.forEach(role => { %>
+                                        <option value="<%= role.id %>"><%= role.name %></option>
+                                    <% }); %>
+                                </select>
+                                <div class="invalid-feedback"></div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="resource" class="form-label">Resource</label>
+                                <input type="text" class="form-control" id="resource" name="resource" 
+                                       placeholder="e.g., blogs, users, comments" required>
+                                <div class="invalid-feedback"></div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-12">
+                            <label class="form-label">Permissions</label>
+                            <div class="d-flex gap-4 mb-3">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="canRead" name="can_read">
+                                    <label class="form-check-label" for="canRead">
+                                        <i class="bi bi-eye me-1"></i>Read
+                                    </label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="canWrite" name="can_write">
+                                    <label class="form-check-label" for="canWrite">
+                                        <i class="bi bi-pencil me-1"></i>Write
+                                    </label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="canDelete" name="can_delete">
+                                    <label class="form-check-label" for="canDelete">
+                                        <i class="bi bi-trash me-1"></i>Delete
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-plus me-1"></i>Create Role Access
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Role Access Table -->
+<div class="card">
+    <div class="card-header">
+        <h5 class="card-title mb-0">
+            <i class="bi bi-list me-2"></i>All Role Access Permissions
+            <span class="badge bg-secondary ms-2"><%= roleAccess.length %></span>
+        </h5>
+    </div>
+    <div class="card-body">
+        <% if (roleAccess.length === 0) { %>
+            <div class="text-center py-4">
+                <i class="bi bi-key fs-1 text-muted"></i>
+                <p class="text-muted mt-2">No role access permissions found. Create your first permission above.</p>
+            </div>
+        <% } else { %>
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead class="table-light">
+                        <tr>
+                            <th style="width: 60px;">ID</th>
+                            <th>Role</th>
+                            <th>Resource</th>
+                            <th>Read</th>
+                            <th>Write</th>
+                            <th>Delete</th>
+                            <th>Created</th>
+                            <th style="width: 120px;">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <% roleAccess.forEach(access => { %>
+                            <tr id="access-<%= access.id %>">
+                                <td><%= access.id %></td>
+                                <td>
+                                    <span class="badge bg-primary">
+                                        <%= access.Role ? access.Role.name : 'No Role' %>
+                                    </span>
+                                </td>
+                                <td><strong><%= access.resource %></strong></td>
+                                <td>
+                                    <% if (access.can_read) { %>
+                                        <i class="bi bi-check-circle-fill text-success"></i>
+                                    <% } else { %>
+                                        <i class="bi bi-x-circle-fill text-danger"></i>
+                                    <% } %>
+                                </td>
+                                <td>
+                                    <% if (access.can_write) { %>
+                                        <i class="bi bi-check-circle-fill text-success"></i>
+                                    <% } else { %>
+                                        <i class="bi bi-x-circle-fill text-danger"></i>
+                                    <% } %>
+                                </td>
+                                <td>
+                                    <% if (access.can_delete) { %>
+                                        <i class="bi bi-check-circle-fill text-success"></i>
+                                    <% } else { %>
+                                        <i class="bi bi-x-circle-fill text-danger"></i>
+                                    <% } %>
+                                </td>
+                                <td>
+                                    <% if (access.createdAt) { %>
+                                        <small class="text-muted">
+                                            <%= new Date(access.createdAt).toLocaleDateString() %>
+                                        </small>
+                                    <% } else { %>
+                                        <small class="text-muted">N/A</small>
+                                    <% } %>
+                                </td>
+                                <td>
+                                    <button class="btn btn-sm btn-outline-warning me-1" 
+                                            onclick="editRoleAccess(<%= access.id %>)"
+                                            title="Edit Permissions">
+                                        <i class="bi bi-pencil"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-danger" 
+                                            onclick="deleteRoleAccess(<%= access.id %>, '<%= access.resource %>')"
+                                            title="Delete Access">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                        <% }); %>
+                    </tbody>
+                </table>
+            </div>
+        <% } %>
+    </div>
+</div>
+
+<!-- Edit Role Access Modal -->
+<div class="modal fade" id="editRoleAccessModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Edit Role Access</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="editRoleAccessForm">
+                    <input type="hidden" name="accessId" id="editAccessId">
+                    <div class="mb-3">
+                        <label for="editRoleId" class="form-label">Role</label>
+                        <select class="form-select" id="editRoleId" name="roleId" required>
+                            <% roles.forEach(role => { %>
+                                <option value="<%= role.id %>"><%= role.name %></option>
+                            <% }); %>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="editResource" class="form-label">Resource</label>
+                        <input type="text" class="form-control" id="editResource" name="resource" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Permissions</label>
+                        <div class="d-flex gap-4">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="editCanRead" name="can_read">
+                                <label class="form-check-label" for="editCanRead">
+                                    <i class="bi bi-eye me-1"></i>Read
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="editCanWrite" name="can_write">
+                                <label class="form-check-label" for="editCanWrite">
+                                    <i class="bi bi-pencil me-1"></i>Write
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="editCanDelete" name="can_delete">
+                                <label class="form-check-label" for="editCanDelete">
+                                    <i class="bi bi-trash me-1"></i>Delete
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="submit" form="editRoleAccessForm" class="btn btn-warning">
+                    Update Access
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Success/Error Toast -->
+<div class="toast-container position-fixed top-0 end-0 p-3">
+    <div id="alertToast" class="toast" role="alert">
+        <div class="toast-header">
+            <i class="bi bi-check-circle-fill text-success me-2" id="toastIcon"></i>
+            <strong class="me-auto" id="toastTitle">Success</strong>
+            <button type="button" class="btn-close" data-bs-dismiss="toast"></button>
+        </div>
+        <div class="toast-body" id="toastMessage"></div>
+    </div>
+</div>
+
+<script>
+$(document).ready(function() {
+    // Create role access form submission
+    $('#createRoleAccessForm').on('submit', function(e) {
+        e.preventDefault();
+        
+        const formData = {
+            roleId: $('#roleId').val(),
+            resource: $('#resource').val().trim(),
+            can_read: $('#canRead').is(':checked'),
+            can_write: $('#canWrite').is(':checked'),
+            can_delete: $('#canDelete').is(':checked')
+        };
+        
+        // Validation
+        let hasError = false;
+        
+        if (!formData.roleId) {
+            showError('#roleId', 'Please select a role');
+            hasError = true;
+        }
+        
+        if (!formData.resource) {
+            showError('#resource', 'Resource name is required');
+            hasError = true;
+        }
+        
+        if (!formData.can_read && !formData.can_write && !formData.can_delete) {
+            showToast('error', 'Error', 'Please select at least one permission');
+            hasError = true;
+        }
+        
+        if (hasError) return;
+        
+        $.ajax({
+            url: '/admin/role-access/create',
+            method: 'POST',
+            data: formData,
+            success: function(response) {
+                showToast('success', 'Success', response.message);
+                $('#createRoleAccessForm')[0].reset();
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1500);
+            },
+            error: function(xhr) {
+                const errorMessage = xhr.responseJSON?.message || 'Error creating role access';
+                showToast('error', 'Error', errorMessage);
+            }
+        });
+    });
+
+    // Edit role access form submission
+    $('#editRoleAccessForm').on('submit', function(e) {
+        e.preventDefault();
+        
+        const formData = {
+            accessId: $('#editAccessId').val(),
+            roleId: $('#editRoleId').val(),
+            resource: $('#editResource').val().trim(),
+            can_read: $('#editCanRead').is(':checked'),
+            can_write: $('#editCanWrite').is(':checked'),
+            can_delete: $('#editCanDelete').is(':checked')
+        };
+        
+        $.ajax({
+            url: '/admin/role-access/update',
+            method: 'POST',
+            data: formData,
+            success: function(response) {
+                $('#editRoleAccessModal').modal('hide');
+                showToast('success', 'Success', response.message);
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1500);
+            },
+            error: function(xhr) {
+                const errorMessage = xhr.responseJSON?.message || 'Error updating role access';
+                showToast('error', 'Error', errorMessage);
+            }
+        });
+    });
+});
+
+function editRoleAccess(accessId) {
+    // Find access data from the rendered roleAccess
+    const roleAccess = <%- JSON.stringify(roleAccess) %>;
+    const access = roleAccess.find(a => a.id === accessId);
+    
+    if (access) {
+        $('#editAccessId').val(access.id);
+        $('#editRoleId').val(access.role_id);
+        $('#editResource').val(access.resource);
+        $('#editCanRead').prop('checked', access.can_read);
+        $('#editCanWrite').prop('checked', access.can_write);
+        $('#editCanDelete').prop('checked', access.can_delete);
+        $('#editRoleAccessModal').modal('show');
+    }
+}
+
+function deleteRoleAccess(accessId, resource) {
+    if (!confirm(`Are you sure you want to delete access for "${resource}"? This action cannot be undone.`)) {
+        return;
+    }
+    
+    $.ajax({
+        url: '/admin/role-access/delete',
+        method: 'POST',
+        data: { accessId: accessId },
+        success: function(response) {
+            showToast('success', 'Success', response.message);
+            $(`#access-${accessId}`).fadeOut(300, function() {
+                $(this).remove();
+                
+                if ($('tbody tr').length === 0) {
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1500);
+                }
+            });
+        },
+        error: function(xhr) {
+            const errorMessage = xhr.responseJSON?.message || 'Error deleting role access';
+            showToast('error', 'Error', errorMessage);
+        }
+    });
+}
+
+function showError(fieldSelector, message) {
+    const field = $(fieldSelector);
+    field.addClass('is-invalid');
+    field.siblings('.invalid-feedback').text(message);
+    
+    field.on('input change', function() {
+        $(this).removeClass('is-invalid');
+    });
+}
+
+function showToast(type, title, message) {
+    const toast = $('#alertToast');
+    const icon = $('#toastIcon');
+    const toastTitle = $('#toastTitle');
+    const toastMessage = $('#toastMessage');
+    
+    icon.removeClass().addClass('bi me-2');
+    
+    if (type === 'success') {
+        icon.addClass('bi-check-circle-fill text-success');
+    } else if (type === 'error') {
+        icon.addClass('bi-x-circle-fill text-danger');
+    } else if (type === 'info') {
+        icon.addClass('bi-info-circle-fill text-info');
+    }
+    
+    toastTitle.text(title);
+    toastMessage.text(message);
+    
+    const bsToast = new bootstrap.Toast(toast[0]);
+    bsToast.show();
+}
+</script>

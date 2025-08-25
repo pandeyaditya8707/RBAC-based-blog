@@ -1,0 +1,69 @@
+<h2 class="page-title">
+  <i class="fas fa-user me-2"></i>My Blogs
+</h2>
+
+<!-- Flash Messages -->
+<% if (typeof success !== 'undefined' && success) { %>
+  <div class="alert alert-success alert-dismissible fade show" role="alert">
+    <i class="fas fa-check-circle me-2"></i>Blog created successfully!
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+  </div>
+<% } %>
+
+<% if (typeof error !== 'undefined' && error) { %>
+  <div class="alert alert-danger alert-dismissible fade show" role="alert">
+    <i class="fas fa-exclamation-triangle me-2"></i><%= error %>
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+  </div>
+<% } %>
+<% if (typeof blogs !== 'undefined' && blogs && blogs.length > 0) { %>
+  <div class="row">
+    <% blogs.forEach(blog => { %>
+      <div class="col-lg-6 mb-4">
+        <div class="card h-100">
+          <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="card-title mb-0"><%= blog.title %></h5>
+            <div>
+              <a href="/user/blogs/<%= blog.id %>/edit" class="btn btn-sm btn-outline-primary me-1" title="Edit Blog">
+                <i class="fas fa-edit"></i>
+              </a>
+              <form action="/user/blogs/<%= blog.id %>/delete" method="POST" class="d-inline">
+                <button type="submit" class="btn btn-sm btn-outline-danger"
+                        onclick="return confirm('Delete this blog?')" title="Delete Blog">
+                  <i class="fas fa-trash"></i>
+                </button>
+              </form>
+            </div>
+          </div>
+          <div class="card-body">
+            <p class="card-text">
+              <%= blog.content.length > 200 ? blog.content.substring(0, 200) + '...' : blog.content %>
+            </p>
+            <% if (blog.Category) { %>
+              <span class="badge bg-secondary">
+                <i class="fas fa-tag me-1"></i><%= blog.Category.name %>
+              </span>
+            <% } %>
+          </div>
+          <div class="card-footer">
+            <small class="text-muted">
+              <i class="fas fa-calendar me-1"></i>
+              <%= blog.createdAt ? new Date(blog.createdAt).toLocaleDateString() : 'N/A' %>
+            </small>
+          </div>
+        </div>
+      </div>
+    <% }); %>
+  </div>
+<% } else { %>
+  <div class="card">
+    <div class="card-body text-center py-5">
+      <i class="fas fa-folder-open fa-4x text-muted mb-3"></i>
+      <h4 class="text-muted">No blogs yet</h4>
+      <p class="text-muted">Start sharing your ideas today!</p>
+      <a href="/user/blogs/create" class="btn btn-primary">
+        <i class="fas fa-pen me-1"></i>Create Blog
+      </a>
+    </div>
+  </div>
+<% } %>

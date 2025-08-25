@@ -1,0 +1,331 @@
+<h1 class="page-title">
+    <i class="bi bi-journal-text me-2"></i>Blog Management
+</h1>
+
+<!-- Create Blog Section -->
+<div class="row mb-4">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-plus-circle me-2"></i>Create New Blog Post
+                </h5>
+            </div>
+            <div class="card-body">
+                <form id="createBlogForm">
+                    <div class="row">
+                        <div class="col-md-8">
+                            <div class="mb-3">
+                                <label for="blogTitle" class="form-label">Blog Title</label>
+                                <input type="text" class="form-control" id="blogTitle" name="title" required>
+                                <div class="invalid-feedback"></div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="blogCategory" class="form-label">Category</label>
+                                <select class="form-select" id="blogCategory" name="categoryId" required>
+                                    <option value="">Select Category</option>
+                                    <% if (typeof categories !== 'undefined' && categories) { %>
+                                        <% categories.forEach(category => { %>
+                                            <option value="<%= category.id %>"><%= category.name %></option>
+                                        <% }); %>
+                                    <% } %>
+                                </select>
+                                <div class="invalid-feedback"></div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="blogAuthor" class="form-label">Author</label>
+                                <select class="form-select" id="blogAuthor" name="authorId" required>
+                                    <option value="">Select Author</option>
+                                    <% if (typeof users !== 'undefined' && users) { %>
+                                        <% users.forEach(user => { %>
+                                            <option value="<%= user.id %>"><%= user.username %></option>
+                                        <% }); %>
+                                    <% } %>
+                                </select>
+                                <div class="invalid-feedback"></div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="blogContent" class="form-label">Content</label>
+                        <textarea class="form-control" id="blogContent" name="content" rows="8" required></textarea>
+                        <div class="invalid-feedback"></div>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-plus me-1"></i>Create Blog Post
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Blogs Table -->
+<div class="card">
+    <div class="card-header">
+        <h5 class="card-title mb-0">
+            <i class="bi bi-list me-2"></i>All Blog Posts
+            <span class="badge bg-secondary ms-2"><%= typeof blogs !== 'undefined' ? blogs.length : 0 %></span>
+        </h5>
+    </div>
+    <div class="card-body">
+        <% if (typeof blogs === 'undefined' || blogs.length === 0) { %>
+            <div class="text-center py-4">
+                <i class="bi bi-journal-text fs-1 text-muted"></i>
+                <p class="text-muted mt-2">No blog posts found. Create your first blog post above.</p>
+            </div>
+        <% } else { %>
+            <div class="row">
+                <% if (typeof blogs !== 'undefined' && blogs) { %>
+                    <% blogs.forEach(blog => { %>
+                    <div class="col-md-6 col-lg-4 mb-4" id="blog-<%= blog.id %>">
+                        <div class="card h-100">
+                            <div class="card-body">
+                                <h6 class="card-title">
+                                    <%= blog.title %>
+                                </h6>
+                                <div class="mb-2">
+                                    <small class="text-muted">
+                                        <i class="bi bi-person me-1"></i>
+                                        <%= blog.User ? blog.User.username : 'Unknown Author' %>
+                                    </small>
+                                    <br>
+                                    <small class="text-muted">
+                                        <i class="bi bi-tag me-1"></i>
+                                        <%= blog.Category ? blog.Category.name : 'No Category' %>
+                                    </small>
+                                    <br>
+                                    <% if (blog.createdAt) { %>
+                                        <small class="text-muted">
+                                            <i class="bi bi-calendar me-1"></i>
+                                            <%= new Date(blog.createdAt).toLocaleDateString() %>
+                                        </small>
+                                    <% } %>
+                                </div>
+                                <p class="card-text">
+                                    <%= blog.content.length > 100 ? blog.content.substring(0, 100) + '...' : blog.content %>
+                                </p>
+                            </div>
+                            <div class="card-footer">
+                                <button class="btn btn-sm btn-outline-primary me-2 view-blog-btn" 
+                                        data-blog-id="<%= blog.id %>"
+                                        title="View Full Blog">
+                                    <i class="bi bi-eye"></i>
+                                </button>
+                                <button class="btn btn-sm btn-outline-danger delete-blog-btn" 
+                                        data-blog-id="<%= blog.id %>"
+                                        data-blog-title="<%= blog.title %>"
+                                        title="Delete Blog">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <% }); %>
+                <% } %>
+            </div>
+        <% } %>
+    </div>
+</div>
+
+<!-- View Blog Modal -->
+<div class="modal fade" id="viewBlogModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalBlogTitle">Blog Post</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="modalBlogMeta" class="mb-3"></div>
+                <div id="modalBlogContent"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Success/Error Toast -->
+<div class="toast-container position-fixed top-0 end-0 p-3">
+    <div id="alertToast" class="toast" role="alert">
+        <div class="toast-header">
+            <i class="bi bi-check-circle-fill text-success me-2" id="toastIcon"></i>
+            <strong class="me-auto" id="toastTitle">Success</strong>
+            <button type="button" class="btn-close" data-bs-dismiss="toast"></button>
+        </div>
+        <div class="toast-body" id="toastMessage"></div>
+    </div>
+</div>
+
+<script>
+$(document).ready(function() {
+    // Event delegation for view blog buttons
+    $(document).on('click', '.view-blog-btn', function() {
+        const blogId = parseInt($(this).data('blog-id'));
+        viewBlog(blogId);
+    });
+    
+    // Event delegation for delete blog buttons
+    $(document).on('click', '.delete-blog-btn', function() {
+        const blogId = parseInt($(this).data('blog-id'));
+        const blogTitle = $(this).data('blog-title');
+        deleteBlog(blogId, blogTitle);
+    });
+
+    // Create blog form submission
+    $('#createBlogForm').on('submit', function(e) {
+        e.preventDefault();
+        
+        const formData = {
+            title: $('#blogTitle').val().trim(),
+            content: $('#blogContent').val().trim(),
+            categoryId: $('#blogCategory').val(),
+            authorId: $('#blogAuthor').val()
+        };
+        
+        // Validation
+        let hasError = false;
+        
+        if (!formData.title) {
+            showError('#blogTitle', 'Blog title is required');
+            hasError = true;
+        }
+        
+        if (!formData.content) {
+            showError('#blogContent', 'Blog content is required');
+            hasError = true;
+        }
+        
+        if (!formData.categoryId) {
+            showError('#blogCategory', 'Please select a category');
+            hasError = true;
+        }
+        
+        if (!formData.authorId) {
+            showError('#blogAuthor', 'Please select an author');
+            hasError = true;
+        }
+        
+        if (hasError) return;
+        
+        $.ajax({
+            url: '/admin/blogs/create',
+            method: 'POST',
+            data: formData,
+            success: function(response) {
+                showToast('success', 'Success', response.message);
+                $('#createBlogForm')[0].reset();
+                // Reload page to show new blog
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1500);
+            },
+            error: function(xhr) {
+                const errorMessage = xhr.responseJSON?.message || 'Error creating blog post';
+                showToast('error', 'Error', errorMessage);
+            }
+        });
+    });
+});
+
+function viewBlog(blogId) {
+    // Find blog data from the rendered blogs
+    const blogs = <%-JSON.stringify(typeof blogs !== 'undefined' ? blogs : [])%>;
+    const blog = blogs && blogs.find(b => b.id === blogId);
+    
+    if (blog) {
+        $('#modalBlogTitle').text(blog.title);
+        $('#modalBlogMeta').html(`
+            <div class="row">
+                <div class="col-md-4">
+                    <strong>Author:</strong> ${blog.User ? blog.User.username : 'Unknown'}
+                </div>
+                <div class="col-md-4">
+                    <strong>Category:</strong> ${blog.Category ? blog.Category.name : 'No Category'}
+                </div>
+                <div class="col-md-4">
+                    <strong>Created:</strong> ${blog.createdAt ? new Date(blog.createdAt).toLocaleDateString() : 'N/A'}
+                </div>
+            </div>
+        `);
+        $('#modalBlogContent').html(`<div style="white-space: pre-wrap;">${blog.content}</div>`);
+        $('#viewBlogModal').modal('show');
+    }
+}
+
+function deleteBlog(blogId, blogTitle) {
+    if (!confirm(`Are you sure you want to delete "${blogTitle}"? This action cannot be undone.`)) {
+        return;
+    }
+    
+    $.ajax({
+        url: '/admin/blogs/delete',
+        method: 'POST',
+        data: { blogId: blogId },
+        success: function(response) {
+            showToast('success', 'Success', response.message);
+            // Remove the blog card
+            $(`#blog-${blogId}`).fadeOut(300, function() {
+                $(this).remove();
+                
+                // Check if no blogs left
+                if ($('[id^="blog-"]').length === 0) {
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1500);
+                }
+            });
+        },
+        error: function(xhr) {
+            const errorMessage = xhr.responseJSON?.message || 'Error deleting blog post';
+            showToast('error', 'Error', errorMessage);
+        }
+    });
+}
+
+function showError(fieldSelector, message) {
+    const field = $(fieldSelector);
+    field.addClass('is-invalid');
+    field.siblings('.invalid-feedback').text(message);
+    
+    field.on('input change', function() {
+        $(this).removeClass('is-invalid');
+    });
+}
+
+function showToast(type, title, message) {
+    const toast = $('#alertToast');
+    const icon = $('#toastIcon');
+    const toastTitle = $('#toastTitle');
+    const toastMessage = $('#toastMessage');
+    
+    // Reset classes
+    icon.removeClass().addClass('bi me-2');
+    
+    // Set appropriate icon and color based on type
+    if (type === 'success') {
+        icon.addClass('bi-check-circle-fill text-success');
+    } else if (type === 'error') {
+        icon.addClass('bi-x-circle-fill text-danger');
+    } else if (type === 'info') {
+        icon.addClass('bi-info-circle-fill text-info');
+    }
+    
+    toastTitle.text(title);
+    toastMessage.text(message);
+    
+    const bsToast = new bootstrap.Toast(toast[0]);
+    bsToast.show();
+}
+</script>

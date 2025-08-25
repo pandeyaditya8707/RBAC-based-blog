@@ -1,0 +1,63 @@
+<div class="row justify-content-center">
+  <div class="col-lg-8">
+    <div class="card shadow-sm">
+      <div class="card-header bg-primary text-white">
+        <h4 class="mb-0">
+          <i class="fas fa-plus me-2"></i>Create New Blog
+        </h4>
+      </div>
+      <div class="card-body">
+
+        <!-- Error Message -->
+        <% if (typeof error !== 'undefined' && error) { %>
+          <div class="alert alert-danger">
+            <i class="fas fa-exclamation-triangle me-2"></i><%= error %>
+          </div>
+        <% } %>
+
+        <!-- Blog Form -->
+        <form action="/user/blogs/create" method="POST">
+          
+          <!-- Title -->
+          <div class="mb-3">
+            <label for="title" class="form-label">Blog Title</label>
+            <input type="text" class="form-control" id="title" name="title" required>
+          </div>
+
+          <!-- Category -->
+          <div class="mb-3">
+            <label for="category_id" class="form-label">Category</label>
+            <select class="form-select" id="category_id" name="category_id" required>
+              <option value="">-- Select Category --</option>
+              <% if (typeof categories !== 'undefined' && categories && categories.length > 0) { %>
+                <% categories.forEach(category => { %>
+                  <option value="<%= category.id %>"><%= category.name %></option>
+                <% }) %>
+              <% } else { %>
+                <option disabled>No categories available</option>
+              <% } %>
+            </select>
+          </div>
+
+          <!-- Content -->
+          <div class="mb-3">
+            <label for="content" class="form-label">Blog Content</label>
+            <textarea class="form-control" id="content" name="content" rows="8" required></textarea>
+          </div>
+
+
+          <!-- Buttons -->
+          <div class="d-flex justify-content-between">
+            <a href="/user/my-blogs" class="btn btn-secondary">
+              <i class="fas fa-arrow-left me-1"></i>Cancel
+            </a>
+            <button type="submit" class="btn btn-success">
+              <i class="fas fa-save me-1"></i>Save Blog
+            </button>
+          </div>
+        </form>
+
+      </div>
+    </div>
+  </div>
+</div>
