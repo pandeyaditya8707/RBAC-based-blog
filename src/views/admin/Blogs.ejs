@@ -2,7 +2,7 @@
     <i class="bi bi-journal-text me-2"></i>Blog Management
 </h1>
 
-<!-- Create Blog Section -->
+
 <div class="row mb-4">
     <div class="col-lg-8">
         <div class="card">
@@ -12,7 +12,7 @@
                 </h5>
             </div>
             <div class="card-body">
-                <form id="createBlogForm">
+                <form id="createBlogForm" enctype="multipart/form-data">
                     <div class="row">
                         <div class="col-md-8">
                             <div class="mb-3">
@@ -55,6 +55,13 @@
                     </div>
                     
                     <div class="mb-3">
+                        <label for="blogImage" class="form-label">Blog Image (Optional)</label>
+                        <input type="file" class="form-control" id="blogImage" name="blogImage" accept="image/*">
+                        <div class="form-text">Upload an image for the blog (Max: 5MB, JPG/PNG/GIF)</div>
+                        <div class="invalid-feedback"></div>
+                    </div>
+                    
+                    <div class="mb-3">
                         <label for="blogContent" class="form-label">Content</label>
                         <textarea class="form-control" id="blogContent" name="content" rows="8" required></textarea>
                         <div class="invalid-feedback"></div>
@@ -69,7 +76,7 @@
     </div>
 </div>
 
-<!-- Blogs Table -->
+
 <div class="card">
     <div class="card-header">
         <h5 class="card-title mb-0">
@@ -89,6 +96,9 @@
                     <% blogs.forEach(blog => { %>
                     <div class="col-md-6 col-lg-4 mb-4" id="blog-<%= blog.id %>">
                         <div class="card h-100">
+                            <% if (blog.image) { %>
+                            <img src="/uploads/blogs/<%= blog.image %>" class="card-img-top" alt="<%= blog.title %>" style="height: 200px; object-fit: cover;">
+                            <% } %>
                             <div class="card-body">
                                 <h6 class="card-title">
                                     <%= blog.title %>
@@ -137,7 +147,7 @@
     </div>
 </div>
 
-<!-- View Blog Modal -->
+
 <div class="modal fade" id="viewBlogModal" tabindex="-1">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
@@ -156,7 +166,7 @@
     </div>
 </div>
 
-<!-- Success/Error Toast -->
+
 <div class="toast-container position-fixed top-0 end-0 p-3">
     <div id="alertToast" class="toast" role="alert">
         <div class="toast-header">
@@ -170,20 +180,20 @@
 
 <script>
 $(document).ready(function() {
-    // Event delegation for view blog buttons
+    
     $(document).on('click', '.view-blog-btn', function() {
         const blogId = parseInt($(this).data('blog-id'));
         viewBlog(blogId);
     });
     
-    // Event delegation for delete blog buttons
+  
     $(document).on('click', '.delete-blog-btn', function() {
         const blogId = parseInt($(this).data('blog-id'));
         const blogTitle = $(this).data('blog-title');
         deleteBlog(blogId, blogTitle);
     });
 
-    // Create blog form submission
+  
     $('#createBlogForm').on('submit', function(e) {
         e.preventDefault();
         
@@ -194,7 +204,7 @@ $(document).ready(function() {
             authorId: $('#blogAuthor').val()
         };
         
-        // Validation
+      
         let hasError = false;
         
         if (!formData.title) {
@@ -226,7 +236,7 @@ $(document).ready(function() {
             success: function(response) {
                 showToast('success', 'Success', response.message);
                 $('#createBlogForm')[0].reset();
-                // Reload page to show new blog
+             
                 setTimeout(() => {
                     window.location.reload();
                 }, 1500);
@@ -240,9 +250,8 @@ $(document).ready(function() {
 });
 
 function viewBlog(blogId) {
-    // Find blog data from the rendered blogs
-    const blogs = <%-JSON.stringify(typeof blogs !== 'undefined' ? blogs : [])%>;
-    const blog = blogs && blogs.find(b => b.id === blogId);
+    const blogsData = <%-JSON.stringify(blogs || []) %>;
+    const blog = blogsData.find(b => b.id === blogId);
     
     if (blog) {
         $('#modalBlogTitle').text(blog.title);
@@ -275,11 +284,10 @@ function deleteBlog(blogId, blogTitle) {
         data: { blogId: blogId },
         success: function(response) {
             showToast('success', 'Success', response.message);
-            // Remove the blog card
+          
             $(`#blog-${blogId}`).fadeOut(300, function() {
                 $(this).remove();
-                
-                // Check if no blogs left
+     
                 if ($('[id^="blog-"]').length === 0) {
                     setTimeout(() => {
                         window.location.reload();
@@ -310,10 +318,9 @@ function showToast(type, title, message) {
     const toastTitle = $('#toastTitle');
     const toastMessage = $('#toastMessage');
     
-    // Reset classes
     icon.removeClass().addClass('bi me-2');
     
-    // Set appropriate icon and color based on type
+
     if (type === 'success') {
         icon.addClass('bi-check-circle-fill text-success');
     } else if (type === 'error') {

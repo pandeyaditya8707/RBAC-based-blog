@@ -1,7 +1,7 @@
 const Joi = require('joi');
 
-// User validation schemas
-const userRegistrationSchema = Joi.object({
+// Admin user creation schema
+const adminUserCreationSchema = Joi.object({
   username: Joi.string()
     .alphanum()
     .min(3)
@@ -22,27 +22,29 @@ const userRegistrationSchema = Joi.object({
     }),
   password: Joi.string()
     .min(6)
-    .pattern(new RegExp('^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)'))
     .required()
     .messages({
       'string.min': 'Password must be at least 6 characters long',
-      'string.pattern.base': 'Password must contain at least one uppercase letter, one lowercase letter, and one number',
       'any.required': 'Password is required'
     }),
-  role_id: Joi.number()
+  roleId: Joi.number()
     .integer()
     .positive()
-    .optional()
+    .required()
+    .messages({
+      'number.positive': 'Please select a valid role',
+      'any.required': 'Role selection is required'
+    })
 });
 
 const userLoginSchema = Joi.object({
   username: Joi.string()
-    .alphanum()
+    .pattern(/^[a-zA-Z0-9_]+$/)
     .min(3)
     .max(30)
     .required()
     .messages({
-      'string.alphanum': 'Username must contain only alphanumeric characters',
+      'string.pattern.base': 'Username must contain only letters, numbers, and underscores',
       'string.min': 'Username must be at least 3 characters long',
       'string.max': 'Username cannot exceed 30 characters',
       'any.required': 'Username is required'
@@ -93,6 +95,8 @@ const categorySchema = Joi.object({
       'string.max': 'Category name cannot exceed 50 characters',
       'any.required': 'Category name is required'
     }),
+
+    
   description: Joi.string()
     .max(500)
     .optional()
@@ -122,12 +126,12 @@ const commentSchema = Joi.object({
 // Admin validation schemas
 const adminLoginSchema = Joi.object({
   username: Joi.string()
-    .alphanum()
+    .pattern(/^[a-zA-Z0-9_]+$/)
     .min(3)
     .max(30)
     .required()
     .messages({
-      'string.alphanum': 'Username must contain only alphanumeric characters',
+      'string.pattern.base': 'Username must contain only letters, numbers, and underscores',
       'string.min': 'Username must be at least 3 characters long',
       'string.max': 'Username cannot exceed 30 characters',
       'any.required': 'Username is required'
@@ -142,8 +146,7 @@ const adminLoginSchema = Joi.object({
 // Validation middleware function
 const validateRequest = (schema) => {
   return (req, res, next) => {
-    console.log('=== VALIDATION MIDDLEWARE ===');
-    console.log('Validating:', req.body);
+
     
     const { error } = schema.validate(req.body, { 
       abortEarly: false,
@@ -154,7 +157,7 @@ const validateRequest = (schema) => {
       console.log('Validation errors:', error.details.map(d => d.message));
       const errorMessages = error.details.map(detail => detail.message);
       
-      // Check if it's an AJAX request
+      // Check if it's an  request
       if (req.xhr || req.headers.accept?.indexOf('json') > -1) {
         return res.status(400).json({
           success: false,
@@ -167,12 +170,11 @@ const validateRequest = (schema) => {
       if (req.originalUrl.includes('/blogs/create')) {
         return res.redirect('/user/blogs/create?error=' + encodeURIComponent(errorMessages[0]));
       }
-      
-      // For regular form submissions, flash the errors and redirect back
+
       req.session.errors = errorMessages;
       req.session.formData = req.body;
       
-      // Get the referer or fallback to a safe default
+    
       const referer = req.get('Referer');
       if (referer && !referer.includes('/user/back')) {
         return res.redirect(referer);
@@ -181,8 +183,6 @@ const validateRequest = (schema) => {
       // Fallback redirects based on the route
       if (req.originalUrl.includes('/user/login')) {
         return res.redirect('/user/login');
-      } else if (req.originalUrl.includes('/user/register')) {
-        return res.redirect('/user/register');
       } else if (req.originalUrl.includes('/admin/login')) {
         return res.redirect('/admin/login');
       }
@@ -191,7 +191,7 @@ const validateRequest = (schema) => {
       return res.redirect('/');
     }
     
-    console.log('Validation passed');
+    
     next();
   };
 };
@@ -199,7 +199,7 @@ const validateRequest = (schema) => {
 // Export schemas and middleware
 module.exports = {
   // Schemas
-  userRegistrationSchema,
+  adminUserCreationSchema,
   userLoginSchema,
   blogSchema,
   categorySchema,
@@ -210,7 +210,7 @@ module.exports = {
   validateRequest,
   
   // Specific validation middlewares
-  validateUserRegistration: validateRequest(userRegistrationSchema),
+  validateAdminUserCreation: validateRequest(adminUserCreationSchema),
   validateUserLogin: validateRequest(userLoginSchema),
   validateBlog: validateRequest(blogSchema),
   validateCategory: validateRequest(categorySchema),

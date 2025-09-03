@@ -1,30 +1,35 @@
 const { DataTypes } = require("sequelize");
 const { sequelize } = require("../configs/db");
 
-const Role = sequelize.define("Role", {
+const PasswordReset = sequelize.define("PasswordReset", {
   id: {
     type: DataTypes.INTEGER,
     primaryKey: true,
     autoIncrement: true,
   },
-  name: {
+  email: {
     type: DataTypes.STRING,
     allowNull: false,
-    unique: true, // e.g. "master", "editor", "viewer"
+    validate: {
+      isEmail: true,
+    },
   },
-  createdAt: {
+  token: {
+    type: DataTypes.STRING,
+    allowNull: false,
+    unique: true,
+  },
+  expires_at: {
     type: DataTypes.DATE,
     allowNull: false,
-    defaultValue: DataTypes.NOW,
   },
-  updatedAt: {
-    type: DataTypes.DATE,
-    allowNull: false,
-    defaultValue: DataTypes.NOW,
+  used: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: false,
   },
 }, {
-  tableName: "Roles",
+  tableName: "PasswordResets",
   timestamps: true,
 });
 
-module.exports = Role;
+module.exports = PasswordReset;

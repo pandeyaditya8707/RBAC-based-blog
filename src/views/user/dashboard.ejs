@@ -12,6 +12,7 @@
             Start your blogging journey today! Share your thoughts, experiences, and insights with the world.
           <% } %>
         </p>
+        <% if (typeof userPermissions !== 'undefined' && userPermissions.blogs && userPermissions.blogs.can_write) { %>
         <a href="/user/blogs/create" class="btn btn-light btn-lg rounded-pill">
           <i class="fas fa-plus me-2"></i>
           <% if (typeof blogCount !== 'undefined' && blogCount > 0) { %>
@@ -20,6 +21,12 @@
             Create Your First Blog
           <% } %>
         </a>
+        <% } else { %>
+        <div class="alert alert-warning mt-3">
+          <i class="fas fa-lock me-2"></i>
+          You don't have permission to create blogs. Your role: <strong><%= userRole || 'No role assigned' %></strong>
+        </div>
+        <% } %>
       </div>
     </div>
   </div>
@@ -69,6 +76,7 @@
 
 <!-- Quick stats or recent activity -->
 <div class="row mt-5">
+  <% if (typeof userPermissions !== 'undefined' && userPermissions.blogs && userPermissions.blogs.can_read) { %>
   <div class="col-md-4">
     <div class="card text-center">
       <div class="card-body">
@@ -79,6 +87,8 @@
       </div>
     </div>
   </div>
+  <% } %>
+  <% if (typeof userPermissions !== 'undefined' && userPermissions.blogs && userPermissions.blogs.can_read) { %>
   <div class="col-md-4">
     <div class="card text-center">
       <div class="card-body">
@@ -89,6 +99,7 @@
       </div>
     </div>
   </div>
+  <% } %>
   <div class="col-md-4">
     <div class="card text-center">
       <div class="card-body">

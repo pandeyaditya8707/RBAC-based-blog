@@ -13,6 +13,9 @@
     <% blogs.forEach(blog => { %>
       <div class="col-lg-6 mb-4" id="blog-<%= blog.id %>">
         <div class="card h-100">
+          <% if (blog.image) { %>
+          <img src="/uploads/blogs/<%= blog.image %>" class="card-img-top" alt="<%= blog.title %>" style="height: 200px; object-fit: cover;">
+          <% } %>
           <div class="card-header">
             <h5 class="card-title mb-0"><%= blog.title %></h5>
           </div>
@@ -36,11 +39,26 @@
                 <%= new Date(blog.created_at).toLocaleDateString() %>
               <% } %>
             </small>
-            <button class="btn btn-sm btn-outline-primary" 
-                    onclick="viewBlog(<%= blog.id %>)"
-                    title="View Full Blog">
-              <i class="fas fa-eye"></i>
-            </button>
+            <div class="d-flex gap-1">
+              <button class="btn btn-sm btn-outline-primary" 
+                      onclick="viewBlog(<%= blog.id %>)"
+                      title="View Full Blog">
+                <i class="fas fa-eye"></i>
+              </button>
+              <% if (typeof userPermissions !== 'undefined' && userPermissions.comments && userPermissions.comments.can_comment) { %>
+              <button class="btn btn-sm btn-outline-success" 
+                      onclick="showCommentModal(<%= blog.id %>)"
+                      title="Add Comment">
+                <i class="fas fa-comment"></i>
+              </button>
+              <% } else { %>
+              <button class="btn btn-sm btn-outline-secondary" 
+                      disabled
+                      title="No comment permission">
+                <i class="fas fa-comment"></i>
+              </button>
+              <% } %>
+            </div>
           </div>
         </div>
       </div>
@@ -50,6 +68,56 @@
   <div class="alert alert-info">
     <i class="fas fa-info-circle me-2"></i>No blogs found.
   </div>
+<% } %>
+
+<!-- Pagination -->
+<% if (typeof totalPages !== 'undefined' && totalPages > 1) { %>
+<nav aria-label="Blog pagination" class="mt-4">
+  <ul class="pagination justify-content-center">
+    <!-- Previous Page -->
+    <% if (currentPage > 1) { %>
+      <li class="page-item">
+        <a class="page-link" href="?page=<%= currentPage - 1 %>" aria-label="Previous">
+          <span aria-hidden="true">&laquo;</span>
+        </a>
+      </li>
+    <% } else { %>
+      <li class="page-item disabled">
+        <span class="page-link" aria-label="Previous">
+          <span aria-hidden="true">&laquo;</span>
+        </span>
+      </li>
+    <% } %>
+    
+    <!-- Page Numbers -->
+    <% for (let i = 1; i <= totalPages; i++) { %>
+      <% if (i === currentPage) { %>
+        <li class="page-item active">
+          <span class="page-link"><%= i %></span>
+        </li>
+      <% } else { %>
+        <li class="page-item">
+          <a class="page-link" href="?page=<%= i %>"><%= i %></a>
+        </li>
+      <% } %>
+    <% } %>
+    
+    <!-- Next Page -->
+    <% if (currentPage < totalPages) { %>
+      <li class="page-item">
+        <a class="page-link" href="?page=<%= currentPage + 1 %>" aria-label="Next">
+          <span aria-hidden="true">&raquo;</span>
+        </a>
+      </li>
+    <% } else { %>
+      <li class="page-item disabled">
+        <span class="page-link" aria-label="Next">
+          <span aria-hidden="true">&raquo;</span>
+        </span>
+      </li>
+    <% } %>
+  </ul>
+</nav>
 <% } %>
 
 <!-- View Blog Modal -->
@@ -71,10 +139,56 @@
   </div>
 </div>
 
+<!-- Comment Modal -->
+<div class="modal fade" id="commentModal" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Comments</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <!-- Existing Comments -->
+        <div class="mb-4">
+          <h6>Comments</h6>
+          <div id="commentsContainer" class="border rounded p-3" style="max-height: 300px; overflow-y: auto;">
+            <p class="text-muted">Loading comments...</p>
+          </div>
+        </div>
+        
+        <!-- Add New Comment -->
+        <% if (typeof userPermissions !== 'undefined' && userPermissions.comments && userPermissions.comments.can_comment) { %>
+        <div>
+          <h6>Add Comment</h6>
+          <form id="commentForm">
+            <input type="hidden" id="commentBlogId" name="blogId">
+            <div class="mb-3">
+              <textarea class="form-control" id="commentContent" name="content" rows="3" placeholder="Write your comment here..." required></textarea>
+            </div>
+            <button type="button" class="btn btn-primary" onclick="submitComment()">
+              <i class="fas fa-paper-plane me-1"></i>Submit Comment
+            </button>
+          </form>
+        </div>
+        <% } else { %>
+        <div class="alert alert-info">
+          <i class="fas fa-info-circle me-1"></i>
+          You don't have permission to add comments.
+        </div>
+        <% } %>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script>
+  const blogsData = <%-JSON.stringify(typeof blogs !== 'undefined' ? blogs : []) %>;
+  
   function viewBlog(blogId) {
-    const blogs = <%- JSON.stringify(typeof blogs !== 'undefined' ? blogs : []) %>;
-    const blog = blogs && blogs.find(b => b.id === blogId);
+    const blog = blogsData.find(b => b.id === blogId);
     
     if (blog) {
       $('#modalBlogTitle').text(blog.title);
@@ -87,12 +201,129 @@
             <strong>Category:</strong> ${blog.Category ? blog.Category.name : 'No Category'}
           </div>
            <div class="col-md-4">
-            <strong>Created:</strong> ${blog.created_at ? new Date(blog.created_at).toLocaleDateString() : 'N/A'}
-           </div>
+            <strong>Created:</strong> ${blog.createdAt ? new Date(blog.createdAt).toLocaleDateString() : 'N/A'}
+
+          </div>
         </div>
       `);
-      $('#modalBlogContent').html(`<div style="white-space: pre-wrap;">${blog.content}</div>`);
-      $('#viewBlogModal').modal('show');
+      $('#modalBlogContent').html(`
+        ${blog.image ? `<img src="/uploads/blogs/${blog.image}" class="img-fluid mb-3" alt="${blog.title}" style="max-height: 300px; width: 100%; object-fit: cover;">` : ''}
+        <div style="white-space: pre-wrap;">${blog.content}</div>
+      `);
+      const modal = new bootstrap.Modal(document.getElementById('viewBlogModal'));
+      modal.show();
     }
+  }
+
+  function showCommentModal(blogId) {
+    $('#commentBlogId').val(blogId);
+    $('#commentContent').val('');
+    const modal = new bootstrap.Modal(document.getElementById('commentModal'));
+    modal.show();
+    // Load existing comments when modal opens
+    loadComments(blogId);
+  }
+
+  function loadComments(blogId) {
+    fetch(`/comments/blog/${blogId}`)
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          displayComments(data.comments);
+        } else {
+          console.error('Failed to load comments:', data.message);
+        }
+      })
+      .catch(error => {
+        console.error('Error loading comments:', error);
+      });
+  }
+
+  function displayComments(comments) {
+    const $commentsContainer = $('#commentsContainer');
+    if (comments.length === 0) {
+      $commentsContainer.html('<p class="text-muted">No comments yet.</p>');
+      return;
+    }
+
+    const commentsHtml = comments.map(comment => `
+      <div class="comment-item border-bottom pb-2 mb-2">
+        <div class="d-flex justify-content-between align-items-start">
+          <div>
+            <strong>${comment.User.username}</strong>
+            <small class="text-muted ms-2">${new Date(comment.createdAt).toLocaleDateString()}</small>
+          </div>
+          <button class="btn btn-sm btn-outline-danger" onclick="deleteComment(${comment.id})" title="Delete Comment">
+            <i class="fas fa-trash"></i>
+          </button>
+        </div>
+        <p class="mt-1 mb-0">${comment.content}</p>
+      </div>
+    `).join('');
+
+    $commentsContainer.html(commentsHtml);
+  }
+
+  function deleteComment(commentId) {
+    if (!confirm('Are you sure you want to delete this comment?')) {
+      return;
+    }
+
+    fetch(`/comments/${commentId}`, {
+      method: 'DELETE'
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data.success) {
+        alert('Comment deleted successfully!');
+        // Reload comments
+        const blogId = $('#commentBlogId').val();
+        loadComments(blogId);
+      } else {
+        alert('Error: ' + data.message);
+      }
+    })
+    .catch(error => {
+      console.error('Error:', error);
+      alert('Failed to delete comment');
+    });
+  }
+
+  function submitComment() {
+    const blogId = $('#commentBlogId').val();
+    const content = $('#commentContent').val();
+    
+    if (!content.trim()) {
+      alert('Please enter a comment');
+      return;
+    }
+
+    // Submit comment via AJAX
+    fetch('/comments', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        blogId: blogId,
+        content: content
+      })
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data.success) {
+        alert('Comment added successfully!');
+        const modal = bootstrap.Modal.getInstance(document.getElementById('commentModal'));
+        modal.hide();
+        // Reload comments for this blog
+        loadComments(blogId);
+      } else {
+        alert('Error: ' + data.message);
+      }
+    })
+    .catch(error => {
+      console.error('Error:', error);
+      alert('Failed to submit comment');
+    });
   }
 </script>

@@ -11,16 +11,22 @@ const Comment = sequelize.define("Comment", {
     type: DataTypes.TEXT,
     allowNull: false,
   },
-  createdAt: {
-    type: DataTypes.DATE,
+  user_id: {
+    type: DataTypes.INTEGER,
     allowNull: false,
-    defaultValue: DataTypes.NOW,
+    references: {
+      model: 'Users',
+      key: 'id'
+    }
   },
-  updatedAt: {
-    type: DataTypes.DATE,
+  blog_id: {
+    type: DataTypes.INTEGER,
     allowNull: false,
-    defaultValue: DataTypes.NOW,
-  },
+    references: {
+      model: 'Blogs',
+      key: 'id'
+    }
+  }
 }, {
   tableName: "Comments",
   timestamps: true,

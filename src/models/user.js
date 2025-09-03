@@ -21,6 +21,14 @@ const User = sequelize.define("User", {
     type: DataTypes.STRING,
     allowNull: false,
   },
+  role_id: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+    references: {
+      model: 'Roles',
+      key: 'id'
+    }
+  },
   is_active: {
     type: DataTypes.BOOLEAN,
     defaultValue: true,
@@ -29,19 +37,9 @@ const User = sequelize.define("User", {
     type: DataTypes.BOOLEAN,
     defaultValue: false,
   },
-  created_at: {
-    type: DataTypes.DATE,
-    allowNull: false,
-    defaultValue: DataTypes.NOW,
-  },
-  updated_at: {
-    type: DataTypes.DATE,
-    allowNull: false,
-    defaultValue: DataTypes.NOW,
-  },
 }, {
-  tableName: "users",
-  timestamps: false, // since you are using custom created_at/updated_at
+  tableName: "Users",
+  timestamps: true, // use Sequelize's default createdAt & updatedAt
 });
 
 module.exports = User;

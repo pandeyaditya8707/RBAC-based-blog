@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><%= typeof title !== 'undefined' ? title + ' - ' : '' %>User Panel</title>
+    <title><%= typeof title !== 'undefined' ? title + ' - ' : '' %>Blog Hub</title>
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
     
     <!-- Bootstrap 5 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -15,9 +16,12 @@
     <style>
         :root {
             --sidebar-width: 260px;
-            --primary-color: #667eea;
-            --sidebar-bg: #1e293b;
-            --sidebar-text: #cbd5e1;
+            --primary-color: #f97316;
+            --secondary-color: #ea580c;
+            --accent-color: #fb923c;
+            --sidebar-bg: #1f2937;
+            --sidebar-text: #d1d5db;
+            --orange-gradient: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
         }
 
         body {
@@ -70,8 +74,8 @@
         .nav-link:hover,
         .nav-link.active {
             color: white;
-            background: #334155;
-            border-right: 3px solid var(--primary-color);
+            background: var(--orange-gradient);
+            border-right: 3px solid var(--accent-color);
         }
 
         .nav-link i {
@@ -108,7 +112,7 @@
         }
 
         .welcome-card {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: var(--orange-gradient);
             color: white;
             border: none;
         }
@@ -119,12 +123,12 @@
         }
 
         .btn-primary:hover {
-            background: #5a67d8;
-            border-color: #5a67d8;
+            background: var(--secondary-color);
+            border-color: var(--secondary-color);
         }
 
         .btn-add-blog {
-            background: #10b981;
+            background: var(--orange-gradient);
             border: none;
             padding: 12px 30px;
             font-weight: 600;
@@ -132,9 +136,9 @@
         }
 
         .btn-add-blog:hover {
-            background: #059669;
+            background: var(--secondary-color);
             transform: translateY(-2px);
-            box-shadow: 0 8px 20px rgba(16, 185, 129, 0.3);
+            box-shadow: 0 8px 20px rgba(249, 115, 22, 0.3);
         }
 
         @media (max-width: 768px) {
@@ -157,7 +161,7 @@
     <nav class="sidebar">
         <div class="sidebar-header">
             <a href="/user/dashboard" class="sidebar-brand">
-                <i class="fas fa-blog me-2"></i>User Panel
+                <i class="fas fa-newspaper me-2" style="color: #f97316;"></i>Blog Hub
             </a>
         </div>
         
@@ -168,24 +172,30 @@
                     <span>Dashboard</span>
                 </a>
             </div>
+            <% if (typeof userPermissions !== 'undefined' && userPermissions.blogs && userPermissions.blogs.can_read) { %>
             <div class="nav-item">
                 <a href="/user/blogs" class="nav-link" id="nav-blogs">
                     <i class="fas fa-globe"></i>
                     <span>All Blogs</span>
                 </a>
             </div>
+            <% } %>
+            <% if (typeof userPermissions !== 'undefined' && userPermissions.blogs && userPermissions.blogs.can_read) { %>
             <div class="nav-item">
                 <a href="/user/my-blogs" class="nav-link" id="nav-my-blogs">
                     <i class="fas fa-pencil-alt"></i>
                     <span>My Blogs</span>
                 </a>
             </div>
+            <% } %>
+            <% if (typeof userPermissions !== 'undefined' && userPermissions.blogs && userPermissions.blogs.can_write) { %>
             <div class="nav-item">
                 <a href="/user/blogs/create" class="nav-link" id="nav-create-blog">
                     <i class="fas fa-plus"></i>
                     <span>Create Blog</span>
                 </a>
             </div>
+            <% } %>
         </div>
     </nav>
 
@@ -201,6 +211,9 @@
             
             <div class="d-flex align-items-center gap-3">
                 <span class="text-muted">Welcome, <%= (typeof user !== 'undefined' && user && user.username) ? user.username : 'User' %></span>
+                <% if (typeof userRole !== 'undefined' && userRole) { %>
+                <span class="badge bg-primary"><%= userRole %></span>
+                <% } %>
                 <a href="/user/logout" class="btn btn-outline-danger btn-sm">
                     <i class="fas fa-sign-out-alt me-1"></i>Logout
                 </a>
@@ -214,11 +227,11 @@
     </main>
 
     <!-- Bootstrap JS -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script  src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     
     <script>
         $(document).ready(function() {
-            // Set active navigation
+            // Setting  navigation
             const currentPath = window.location.pathname;
             $('.nav-link').removeClass('active');
             
@@ -237,7 +250,7 @@
                 $('.sidebar').toggleClass('show');
             });
 
-            // Close sidebar when clicking outside on mobile
+            // for mobile
             $(document).click(function(e) {
                 if ($(window).width() <= 768) {
                     if (!$(e.target).closest('.sidebar, #sidebarToggle').length) {

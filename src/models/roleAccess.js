@@ -7,22 +7,22 @@ const RoleAccess = sequelize.define("RoleAccess", {
     primaryKey: true,
     autoIncrement: true,
   },
+  role_id: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+    references: {
+      model: 'Roles',
+      key: 'id'
+    }
+  },
   resource: {
     type: DataTypes.STRING,
-    allowNull: false,
+    allowNull: false, 
   },
-  can_read: {
-    type: DataTypes.BOOLEAN,
-    defaultValue: false,
-  },
-  can_write: {
-    type: DataTypes.BOOLEAN,
-    defaultValue: false,
-  },
-  can_delete: {
-    type: DataTypes.BOOLEAN,
-    defaultValue: false,
-  },
+  can_read: { type: DataTypes.BOOLEAN, defaultValue: false },
+  can_write: { type: DataTypes.BOOLEAN, defaultValue: false },
+  can_delete: { type: DataTypes.BOOLEAN, defaultValue: false },
+  can_comment: { type: DataTypes.BOOLEAN, defaultValue: false },
   createdAt: {
     type: DataTypes.DATE,
     allowNull: false,

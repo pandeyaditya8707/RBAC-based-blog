@@ -1,24 +1,21 @@
 const express = require("express");
 const router = express.Router();
 const authController = require("../controllers/authController");
-const { validateAdminLogin } = require("../middleware/validation");
 
-// =============================
-// Admin Login
-// =============================
+// Admin login routes
 router.get("/admin/login", authController.getAdminLogin);
-router.post("/admin/login", validateAdminLogin, authController.postAdminLogin);
+router.post("/admin/login", authController.postAdminLogin);
 
-// =============================
-// User Registration
-// =============================
-router.get("/register", (req, res) => {
-  res.redirect("/user/register");
-});
+// Forgot password routes
+router.get("/forgot-password", authController.getForgotPassword);
+router.post("/forgot-password", authController.postForgotPassword);
 
-// =============================
-// Logout (works for both user/admin)
-// =============================
+// Reset password routes
+router.get("/reset-password/:token", authController.getResetPassword);
+router.post("/reset-password/:token", authController.postResetPassword);
+
+// Logout route
 router.post("/logout", authController.logout);
+
 
 module.exports = router;

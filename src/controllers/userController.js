@@ -1,24 +1,22 @@
-// controllers/userController.js - Fixed login function
-const bcrypt = require('bcrypt');
+// controllers/userController.js
+const bcrypt = require('bcryptjs');
 const { User, Role, RoleAccess, Blog, Category } = require('../models');
-const { validateUserLogin, validateUserRegistration, validateBlog } = require('../middleware/validation');
+const { validateUserLogin, validateBlog } = require('../middleware/validation');
+const { handleBlogImageUpload } = require('../middleware/upload');
+const path = require('path');
+const fs = require('fs');
 
 const userController = {
   
-  // Show login page
+ //showlogin
   showLogin: (req, res) => {
     const error = req.query.error;
     const success = req.query.success;
     res.render('auth/login', { error, success });
   },
 
-  // Show registration page
-  showRegister: (req, res) => {
-    const error = req.query.error;
-    res.render("auth/userRegister", { error });
-  },
 
-  // Handle user login - FIXED
+
   login: async (req, res) => {
     try {
       const { username, password } = req.body;
@@ -46,8 +44,8 @@ const userController = {
         return res.redirect('/user/login?error=no_role_assigned');
       }
 
-      // Block admin users from using user login (they should use admin login)
-      if (user.Role.name === 'Admin') {
+      //admin login ni kr skta
+      if (user.Role.name === 'admin') {
         return res.redirect('/user/login?error=use_admin_login');
       }
 
@@ -64,91 +62,6 @@ const userController = {
     }
   },
 
-  // Handle user registration
-  register: async (req, res) => {
-    try {
-      console.log('=== USER REGISTRATION DEBUG ===');
-      console.log('Request body:', req.body);
-      
-      const { username, email, password} = req.body;
-
-      if (!username || !email || !password ) {
-        console.log('Missing fields');
-        return res.redirect('/user/register?error=missing_fields');
-      }
-      
-      if (password.length < 6) {
-        console.log('Password too short');
-        return res.redirect('/user/register?error=password_too_short');
-      }
-
-      const existingUser = await User.findOne({
-        where: {
-          [require('sequelize').Op.or]: [
-            { email: email.toLowerCase().trim() },
-            { username: username.trim() }
-          ]
-        }
-      });
-      if (existingUser) {
-        console.log('User already exists');
-        return res.redirect('/user/register?error=user_exists');
-      }
-
-      // Check available roles
-      const allRoles = await Role.findAll();
-      console.log('Available roles:', allRoles.map(r => r.name));
-      
-      let targetRole = await Role.findOne({ where: { name: 'Author' } });
-      if (!targetRole) {
-        console.log('Author role not found, trying alternative names...');
-        // Try different possible role names
-        const roleNames = ['author', 'user', 'User', 'member', 'Member'];
-        for (const roleName of roleNames) {
-          targetRole = await Role.findOne({ where: { name: roleName } });
-          if (targetRole) {
-            console.log('Found role:', targetRole.name);
-            break;
-          }
-        }
-        
-        if (!targetRole) {
-          // Get the first non-admin role
-          targetRole = await Role.findOne({ 
-            where: { 
-              name: { 
-                [require('sequelize').Op.not]: 'Admin' 
-              } 
-            } 
-          });
-          console.log('Using first available non-admin role:', targetRole ? targetRole.name : 'none');
-        }
-        
-        if (!targetRole) {
-          console.log('No suitable role found');
-          return res.redirect('/user/register?error=role_not_found');
-        }
-      }
-
-      const hashedPassword = await bcrypt.hash(password, 12);
-
-      const newUser = await User.create({
-        username: username.trim(),
-        email: email.toLowerCase().trim(),
-        password: hashedPassword,
-        role_id: targetRole.id,
-        is_active: true,
-        is_verified: false
-      });
-
-      console.log('User created successfully with ID:', newUser.id);
-      res.redirect('/user/login?success=registration_successful');
-
-    } catch (error) {
-      console.error('Registration error:', error);
-      res.redirect('/user/register?error=registration_failed');
-    }
-  },
 
   showDashboard: async (req, res) => {
   try {
@@ -158,6 +71,7 @@ const userController = {
       limit: 5,
       order: [['createdAt', 'DESC']],
       include: [{ model: Category, attributes: ['name'] }]
+
     });
 
     res.render('user/layout', {
@@ -186,7 +100,7 @@ const userController = {
 showBlogs: async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
-    const limit = 10;
+    const limit = 4;
     const offset = (page - 1) * limit;
 
     const { count, rows: blogs } = await Blog.findAndCountAll({
@@ -228,15 +142,25 @@ showBlogs: async (req, res) => {
 
   showMyBlogs: async (req, res) => {
   try {
-    const blogs = await Blog.findAll({
+    const page = parseInt(req.query.page) || 1;
+    const limit = 4;
+    const offset = (page - 1) * limit;
+
+    const { count, rows: blogs } = await Blog.findAndCountAll({
       where: { author_id: req.user.id },
       include: [{ model: Category, attributes: ['name'] }],
-      order: [['createdAt', 'DESC']]
+      order: [['createdAt', 'DESC']],
+      limit,
+      offset
     });
+
+    const totalPages = Math.ceil(count / limit);
 
     res.render('user/layout', {
       contentPage: '../user/my-blogs',
       blogs,
+      currentPage: page,
+      totalPages,
       user: req.user,
       title: "My Blogs",
       activePage: "my-blogs",
@@ -249,6 +173,8 @@ showBlogs: async (req, res) => {
     res.render('user/layout', {
       contentPage: '../user/my-blogs',
       blogs: [],
+      currentPage: 1,
+      totalPages: 1,
       user: req.user,
       title: "My Blogs",
       activePage: "my-blogs",
@@ -286,14 +212,11 @@ showBlogs: async (req, res) => {
   },
 
   // Handle create blog
-  createBlog: async (req, res) => {
-    console.log('=== CREATE BLOG CONTROLLER CALLED ===');
-    console.log('Method:', req.method);
-    console.log('URL:', req.url);
-    console.log('Body:', req.body);
-    console.log('User:', req.user ? req.user.username : 'No user');
+  createBlog: [handleBlogImageUpload, async (req, res) => {
     
     try {
+    
+      
       const { title, content, category_id } = req.body;
       
       if (!title || !content) {
@@ -301,26 +224,33 @@ showBlogs: async (req, res) => {
         return res.redirect('/user/blogs/create?error=missing_fields');
       }
 
+      // Handle upload error
+      if (req.uploadError) {
+        console.log('Upload error detected:', req.uploadError);
+        return res.redirect(`/user/blogs/create?error=${encodeURIComponent(req.uploadError)}`);
+      }
+
       const blogData = {
         title: title.trim(),
         content: content.trim(),
         category_id: category_id || null,
         author_id: req.user.id,
-        is_published: true
+        is_published: true,
+        image: req.file ? req.file.filename : null
       };
       
-      console.log('Creating blog with data:', blogData);
+      console.log('Blog data to create:', blogData);
       
       const newBlog = await req.models.Blog.create(blogData);
-      console.log('Blog created with ID:', newBlog.id);
       
+   
       return res.redirect('/user/my-blogs?success=blog_created');
 
     } catch (error) {
       console.error('Create blog error:', error);
       return res.redirect('/user/blogs/create?error=creation_failed');
     }
-  },
+  }],
 
   // Delete user's own blog
   deleteBlog: async (req, res) => {
@@ -332,27 +262,9 @@ showBlogs: async (req, res) => {
       res.status(500).json({ success: false, message: 'Error deleting blog' });
     }
   },
-  // Show edit form
-/* getEditBlog: async (req, res) => {
-  try {
-    const blog = await req.models.Blog.findByPk(req.params.id, {
-      include: req.models.Category,
-    });
-    if (!blog) {
-      return res.redirect('/user/my-blogs?error=Blog not found');
-    }
-    res.render('user/layout', {
-      contentPage: '../user/editBlog',
-      blog,
-      user: req.user,
-      title: 'Edit Blog'
-    });
-  } catch (error) {
-    console.error("Get Edit Blog error:", error);
-    res.redirect('/user/my-blogs?error=Error loading edit page');
-  }
-}, */
-getEditBlog: async (req, res) => {
+
+  // Handle edit blog page
+  editBlog: async (req, res) => {
   try {
     const blog = await req.models.Blog.findByPk(req.params.id, {
       include: req.models.Category,
@@ -362,7 +274,7 @@ getEditBlog: async (req, res) => {
       return res.redirect('/user/my-blogs?error=Blog not found');
     }
 
-    // ✅ Fetch all categories for dropdown
+   
     const categories = await req.models.Category.findAll();
 
     res.render('user/layout', {
@@ -378,22 +290,35 @@ getEditBlog: async (req, res) => {
   }
 },
 
-
 // Handle update
-updateBlog: async (req, res) => {
+updateBlog: [handleBlogImageUpload, async (req, res) => {
   try {
-    console.log('=== UPDATE BLOG DEBUG ===');
-    console.log('Request body:', req.body);
-    console.log('Blog ID:', req.params.id);
-    console.log('Current blog category_id:', req.blog.category_id);
+   
     
     const { title, content, category_id } = req.body;
+    
+    // Handle upload error
+    if (req.uploadError) {
+      return res.redirect(`/user/blogs/${req.params.id}/edit?error=${encodeURIComponent(req.uploadError)}`);
+    }
     
     const updateData = {
       title: title.trim(),
       content: content.trim(),
       category_id: category_id || null
     };
+    
+    // Handle image update
+    if (req.file) {
+      // Delete old image if exists
+      if (req.blog.image) {
+        const oldImagePath = path.join(__dirname, '../../uploads/blogs', req.blog.image);
+        if (fs.existsSync(oldImagePath)) {
+          fs.unlinkSync(oldImagePath);
+        }
+      }
+      updateData.image = req.file.filename;
+    }
     
     console.log('Update data:', updateData);
     
@@ -405,11 +330,8 @@ updateBlog: async (req, res) => {
     console.error("Update Blog error:", error);
     res.redirect('/user/my-blogs?error=Error updating blog');
   }
-},
+}],
 
-
-
-  // Logout
   logout: (req, res) => {
     req.session.destroy((err) => {
       if (err) console.error('Logout error:', err);

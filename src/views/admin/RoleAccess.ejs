@@ -30,7 +30,7 @@
                             <div class="mb-3">
                                 <label for="resource" class="form-label">Resource</label>
                                 <input type="text" class="form-control" id="resource" name="resource" 
-                                       placeholder="e.g., blogs, users, comments" required>
+                                       placeholder="e.g., blogs, comments" required>
                                 <div class="invalid-feedback"></div>
                             </div>
                         </div>
@@ -56,6 +56,12 @@
                                     <input class="form-check-input" type="checkbox" id="canDelete" name="can_delete">
                                     <label class="form-check-label" for="canDelete">
                                         <i class="bi bi-trash me-1"></i>Delete
+                                    </label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="canComment" name="can_comment">
+                                    <label class="form-check-label" for="canComment">
+                                        <i class="bi bi-chat me-1"></i>Comment
                                     </label>
                                 </div>
                             </div>
@@ -96,6 +102,7 @@
                             <th>Read</th>
                             <th>Write</th>
                             <th>Delete</th>
+                            <th>Comment</th>
                             <th>Created</th>
                             <th style="width: 120px;">Actions</th>
                         </tr>
@@ -132,6 +139,13 @@
                                     <% } %>
                                 </td>
                                 <td>
+                                    <% if (access.can_comment) { %>
+                                        <i class="bi bi-check-circle-fill text-success"></i>
+                                    <% } else { %>
+                                        <i class="bi bi-x-circle-fill text-danger"></i>
+                                    <% } %>
+                                </td>
+                                <td>
                                     <% if (access.createdAt) { %>
                                         <small class="text-muted">
                                             <%= new Date(access.createdAt).toLocaleDateString() %>
@@ -142,7 +156,7 @@
                                 </td>
                                 <td>
                                     <button class="btn btn-sm btn-outline-warning me-1" 
-                                            onclick="editRoleAccess(<%= access.id %>)"
+                                            onclick="editRoleAccess( <%= access.id %> )"
                                             title="Edit Permissions">
                                         <i class="bi bi-pencil"></i>
                                     </button>
@@ -205,6 +219,12 @@
                                     <i class="bi bi-trash me-1"></i>Delete
                                 </label>
                             </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="editCanComment" name="can_comment">
+                                <label class="form-check-label" for="editCanComment">
+                                    <i class="bi bi-chat me-1"></i>Comment
+                                </label>
+                            </div>
                         </div>
                     </div>
                 </form>
@@ -242,7 +262,8 @@ $(document).ready(function() {
             resource: $('#resource').val().trim(),
             can_read: $('#canRead').is(':checked'),
             can_write: $('#canWrite').is(':checked'),
-            can_delete: $('#canDelete').is(':checked')
+            can_delete: $('#canDelete').is(':checked'),
+            can_comment: $('#canComment').is(':checked')
         };
         
         // Validation
@@ -258,7 +279,7 @@ $(document).ready(function() {
             hasError = true;
         }
         
-        if (!formData.can_read && !formData.can_write && !formData.can_delete) {
+        if (!formData.can_read && !formData.can_write && !formData.can_delete && !formData.can_comment) {
             showToast('error', 'Error', 'Please select at least one permission');
             hasError = true;
         }
@@ -293,7 +314,8 @@ $(document).ready(function() {
             resource: $('#editResource').val().trim(),
             can_read: $('#editCanRead').is(':checked'),
             can_write: $('#editCanWrite').is(':checked'),
-            can_delete: $('#editCanDelete').is(':checked')
+            can_delete: $('#editCanDelete').is(':checked'),
+            can_comment: $('#editCanComment').is(':checked')
         };
         
         $.ajax({
@@ -317,7 +339,7 @@ $(document).ready(function() {
 
 function editRoleAccess(accessId) {
     // Find access data from the rendered roleAccess
-    const roleAccess = <%- JSON.stringify(roleAccess) %>;
+    const roleAccess = JSON.stringify(roleAccess);
     const access = roleAccess.find(a => a.id === accessId);
     
     if (access) {
@@ -327,6 +349,7 @@ function editRoleAccess(accessId) {
         $('#editCanRead').prop('checked', access.can_read);
         $('#editCanWrite').prop('checked', access.can_write);
         $('#editCanDelete').prop('checked', access.can_delete);
+        $('#editCanComment').prop('checked', access.can_comment);
         $('#editRoleAccessModal').modal('show');
     }
 }

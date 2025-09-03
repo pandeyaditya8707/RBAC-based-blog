@@ -21,18 +21,38 @@
     <% blogs.forEach(blog => { %>
       <div class="col-lg-6 mb-4">
         <div class="card h-100">
+          <% if (blog.image) { %>
+          <img src="/uploads/blogs/<%= blog.image %>" class="card-img-top" alt="<%= blog.title %>" style="height: 200px; object-fit: cover;">
+          <% } %>
           <div class="card-header d-flex justify-content-between align-items-center">
             <h5 class="card-title mb-0"><%= blog.title %></h5>
             <div>
+              <button class="btn btn-sm btn-outline-info me-1" 
+                      onclick="viewBlog(<%= blog.id %>)"
+                      title="View Full Blog">
+                <i class="fas fa-eye"></i>
+              </button>
+              <% if (typeof userPermissions !== 'undefined' && userPermissions.blogs && userPermissions.blogs.can_write) { %>
               <a href="/user/blogs/<%= blog.id %>/edit" class="btn btn-sm btn-outline-primary me-1" title="Edit Blog">
                 <i class="fas fa-edit"></i>
               </a>
+              <% } else { %>
+              <button class="btn btn-sm btn-outline-secondary me-1" disabled title="No edit permission">
+                <i class="fas fa-edit"></i>
+              </button>
+              <% } %>
+              <% if (typeof userPermissions !== 'undefined' && userPermissions.blogs && userPermissions.blogs.can_delete) { %>
               <form action="/user/blogs/<%= blog.id %>/delete" method="POST" class="d-inline">
                 <button type="submit" class="btn btn-sm btn-outline-danger"
                         onclick="return confirm('Delete this blog?')" title="Delete Blog">
                   <i class="fas fa-trash"></i>
                 </button>
               </form>
+              <% } else { %>
+              <button class="btn btn-sm btn-outline-secondary" disabled title="No delete permission">
+                <i class="fas fa-trash"></i>
+              </button>
+              <% } %>
             </div>
           </div>
           <div class="card-body">
@@ -61,9 +81,113 @@
       <i class="fas fa-folder-open fa-4x text-muted mb-3"></i>
       <h4 class="text-muted">No blogs yet</h4>
       <p class="text-muted">Start sharing your ideas today!</p>
+      <% if (typeof userPermissions !== 'undefined' && userPermissions.blogs && userPermissions.blogs.can_write) { %>
       <a href="/user/blogs/create" class="btn btn-primary">
         <i class="fas fa-pen me-1"></i>Create Blog
       </a>
+      <% } else { %>
+      <div class="alert alert-warning mt-3">
+        <i class="fas fa-exclamation-triangle me-2"></i>
+        You don't have permission to create blogs. Contact your administrator.
+      </div>
+      <% } %>
     </div>
   </div>
 <% } %>
+
+<!-- Pagination -->
+<% if (typeof totalPages !== 'undefined' && totalPages > 1) { %>
+<nav aria-label="My blogs pagination" class="mt-4">
+  <ul class="pagination justify-content-center">
+    <!-- Previous Page -->
+    <% if (currentPage > 1) { %>
+      <li class="page-item">
+        <a class="page-link" href="?page=<%= currentPage - 1 %>" aria-label="Previous">
+          <span aria-hidden="true">&laquo;</span>
+        </a>
+      </li>
+    <% } else { %>
+      <li class="page-item disabled">
+        <span class="page-link" aria-label="Previous">
+          <span aria-hidden="true">&laquo;</span>
+        </span>
+      </li>
+    <% } %>
+    
+    <!-- Page Numbers -->
+    <% for (let i = 1; i <= totalPages; i++) { %>
+      <% if (i === currentPage) { %>
+        <li class="page-item active">
+          <span class="page-link"><%= i %></span>
+        </li>
+      <% } else { %>
+        <li class="page-item">
+          <a class="page-link" href="?page=<%= i %>"><%= i %></a>
+        </li>
+      <% } %>
+    <% } %>
+    
+    <!-- Next Page -->
+    <% if (currentPage < totalPages) { %>
+      <li class="page-item">
+        <a class="page-link" href="?page=<%= currentPage + 1 %>" aria-label="Next">
+          <span aria-hidden="true">&raquo;</span>
+        </a>
+      </li>
+    <% } else { %>
+      <li class="page-item disabled">
+        <span class="page-link" aria-label="Next">
+          <span aria-hidden="true">&raquo;</span>
+        </span>
+      </li>
+    <% } %>
+  </ul>
+</nav>
+<% } %>
+
+<!-- View Blog Modal -->
+<div class="modal fade" id="viewBlogModal" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="modalBlogTitle">Blog Post</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div id="modalBlogMeta" class="mb-3"></div>
+        <div id="modalBlogContent"></div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const blogsData = <%-JSON.stringify(typeof blogs !== 'undefined' ? blogs : []) %>;
+  
+  function viewBlog(blogId) {
+    const blog = blogsData.find(b => b.id === blogId);
+    
+    if (blog) {
+      $('#modalBlogTitle').text(blog.title);
+      $('#modalBlogMeta').html(`
+        <div class="row">
+          <div class="col-md-6">
+            <strong>Category:</strong> ${blog.Category ? blog.Category.name : 'No Category'}
+          </div>
+          <div class="col-md-6">
+            <strong>Created:</strong> ${blog.createdAt ? new Date(blog.createdAt).toLocaleDateString() : 'N/A'}
+          </div>
+        </div>
+      `);
+      $('#modalBlogContent').html(`
+        ${blog.image ? `<img src="/uploads/blogs/${blog.image}" class="img-fluid mb-3" alt="${blog.title}" style="max-height: 300px; width: 100%; object-fit: cover;">` : ''}
+        <div style="white-space: pre-wrap;">${blog.content}</div>
+      `);
+      const modal = new bootstrap.Modal(document.getElementById('viewBlogModal'));
+      modal.show();
+    }
+  }
+</script>

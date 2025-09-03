@@ -7,7 +7,7 @@
         </h4>
       </div>
       <div class="card-body">
-        <form action="/user/blogs/<%= blog.id %>/edit" method="POST">
+        <form action="/user/blogs/<%= blog.id %>/edit" method="POST" enctype="multipart/form-data">
           <!-- Title -->
           <div class="mb-3">
             <label for="title" class="form-label">Blog Title</label>
@@ -19,6 +19,25 @@
               value="<%= blog.title %>" 
               required
             >
+          </div>
+
+          <!-- Current Image Display -->
+          <% if (blog.image) { %>
+          <div class="mb-3">
+            <label class="form-label">Current Image</label>
+            <div class="mb-2">
+              <img src="/uploads/blogs/<%= blog.image %>" alt="Current blog image" class="img-thumbnail" style="max-width: 200px; max-height: 150px;">
+            </div>
+          </div>
+          <% } %>
+
+          <!-- Blog Image Upload -->
+          <div class="mb-3">
+            <label for="blogImage" class="form-label">
+              <%= blog.image ? 'Change Image (Optional)' : 'Add Image (Optional)' %>
+            </label>
+            <input type="file" class="form-control" id="blogImage" name="blogImage" accept="image/*">
+            <div class="form-text">Upload an image for your blog (Max: 5MB, JPG/PNG/GIF)</div>
           </div>
 
           <!-- Content -->

@@ -1,0 +1,207 @@
+<h1 class="page-title">
+    <i class="bi bi-shield-check me-2"></i>Role Management
+</h1>
+
+<!-- Create Role Section -->
+<div class="row mb-4">
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-plus-circle me-2"></i>Add New Role
+                </h5>
+            </div>
+            <div class="card-body">
+                <form id="createRoleForm">
+                    <div class="mb-3">
+                        <label for="roleName" class="form-label">Role Name</label>
+                        <input type="text" class="form-control" id="roleName" name="name" 
+                               placeholder="e.g., Editor, Moderator, Viewer" required>
+                        <div class="invalid-feedback"></div>
+                        <div class="form-text">Role names should be descriptive and unique</div>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-plus me-1"></i>Create Role
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Roles Table -->
+<div class="card">
+    <div class="card-header">
+        <h5 class="card-title mb-0">
+            <i class="bi bi-list me-2"></i>All Roles
+            <span class="badge bg-secondary ms-2"><%= roles.length %></span>
+        </h5>
+    </div>
+    <div class="card-body">
+        <% if (roles.length === 0) { %>
+            <div class="text-center py-4">
+                <i class="bi bi-shield-check fs-1 text-muted"></i>
+                <p class="text-muted mt-2">No roles found. Create your first role above.</p>
+            </div>
+        <% } else { %>
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead class="table-light">
+                        <tr>
+                            <th style="width: 60px;">ID</th>
+                            <th>Role Name</th>
+                            <th>Created</th>
+                            <th>Updated</th>
+                            <th style="width: 120px;">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <% roles.forEach(role => { %>
+                            <tr id="role-<%= role.id %>">
+                                <td><%= role.id %></td>
+                                <td>
+                                    <strong><%= role.name %></strong>
+                                </td>
+                                <td>
+                                    <% if (role.createdAt) { %>
+                                        <small class="text-muted">
+                                            <%= new Date(role.createdAt).toLocaleDateString() %>
+                                        </small>
+                                    <% } else { %>
+                                        <small class="text-muted">N/A</small>
+                                    <% } %>
+                                </td>
+                                <td>
+                                    <% if (role.updatedAt) { %>
+                                        <small class="text-muted">
+                                            <%= new Date(role.updatedAt).toLocaleDateString() %>
+                                        </small>
+                                    <% } else { %>
+                                        <small class="text-muted">N/A</small>
+                                    <% } %>
+                                </td>
+                                <td>
+                                    <button class="btn btn-sm btn-outline-danger" 
+                                            onclick="deleteRole(<%= role.id %>, '<%= role.name %>')"
+                                            title="Delete Role">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                        <% }); %>
+                    </tbody>
+                </table>
+            </div>
+        <% } %>
+    </div>
+</div>
+
+<!-- Success/Error Toast -->
+<div class="toast-container position-fixed top-0 end-0 p-3">
+    <div id="alertToast" class="toast" role="alert">
+        <div class="toast-header">
+            <i class="bi bi-check-circle-fill text-success me-2" id="toastIcon"></i>
+            <strong class="me-auto" id="toastTitle">Success</strong>
+            <button type="button" class="btn-close" data-bs-dismiss="toast"></button>
+        </div>
+        <div class="toast-body" id="toastMessage"></div>
+    </div>
+</div>
+
+<script>
+$(document).ready(function() {
+    // Create role form submission
+    $('#createRoleForm').on('submit', function(e) {
+        e.preventDefault();
+        
+        const formData = {
+            name: $('#roleName').val().trim()
+        };
+        
+        // Validation
+        if (!formData.name) {
+            showError('#roleName', 'Role name is required');
+            return;
+        }
+        
+        $.ajax({
+            url: '/admin/roles/create',
+            method: 'POST',
+            data: formData,
+            success: function(response) {
+                showToast('success', 'Success', response.message);
+                $('#createRoleForm')[0].reset();
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1500);
+            },
+            error: function(xhr) {
+                const errorMessage = xhr.responseJSON?.message || 'Error creating role';
+                showToast('error', 'Error', errorMessage);
+            }
+        });
+    });
+});
+
+function deleteRole(roleId, roleName) {
+    if (!confirm(`Are you sure you want to delete the role "${roleName}"? This action cannot be undone.`)) {
+        return;
+    }
+    
+    $.ajax({
+        url: '/admin/roles/delete',
+        method: 'POST',
+        data: { roleId: roleId },
+        success: function(response) {
+            showToast('success', 'Success', response.message);
+            $(`#role-${roleId}`).fadeOut(300, function() {
+                $(this).remove();
+                
+                if ($('tbody tr').length === 0) {
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1500);
+                }
+            });
+        },
+        error: function(xhr) {
+            const errorMessage = xhr.responseJSON?.message || 'Error deleting role';
+            showToast('error', 'Error', errorMessage);
+        }
+    });
+}
+
+function showError(fieldSelector, message) {
+    const field = $(fieldSelector);
+    field.addClass('is-invalid');
+    field.siblings('.invalid-feedback').text(message);
+    
+    field.on('input change', function() {
+        $(this).removeClass('is-invalid');
+    });
+}
+
+function showToast(type, title, message) {
+    const toast = $('#alertToast');
+    const icon = $('#toastIcon');
+    const toastTitle = $('#toastTitle');
+    const toastMessage = $('#toastMessage');
+    
+    icon.removeClass().addClass('bi me-2');
+    
+    if (type === 'success') {
+        icon.addClass('bi-check-circle-fill text-success');
+    } else if (type === 'error') {
+        icon.addClass('bi-x-circle-fill text-danger');
+    } else if (type === 'info') {
+        icon.addClass('bi-info-circle-fill text-info');
+    }
+    
+    toastTitle.text(title);
+    toastMessage.text(message);
+    
+    const bsToast = new bootstrap.Toast(toast[0]);
+    bsToast.show();
+}
+</script>

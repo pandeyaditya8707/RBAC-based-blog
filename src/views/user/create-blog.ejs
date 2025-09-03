@@ -16,7 +16,7 @@
         <% } %>
 
         <!-- Blog Form -->
-        <form action="/user/blogs/create" method="POST">
+        <form action="/user/blogs/create" method="POST" enctype="multipart/form-data">
           
           <!-- Title -->
           <div class="mb-3">
@@ -37,6 +37,13 @@
                 <option disabled>No categories available</option>
               <% } %>
             </select>
+          </div>
+
+          <!-- Blog Image -->
+          <div class="mb-3">
+            <label for="blogImage" class="form-label">Blog Image (Optional)</label>
+            <input type="file" class="form-control" id="blogImage" name="blogImage" accept="image/*">
+            <div class="form-text">Upload an image for your blog (Max: 5MB, JPG/PNG/GIF)</div>
           </div>
 
           <!-- Content -->

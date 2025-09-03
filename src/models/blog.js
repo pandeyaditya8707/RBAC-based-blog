@@ -15,28 +15,34 @@ const Blog = sequelize.define("Blog", {
     type: DataTypes.TEXT,
     allowNull: false,
   },
+  image: {
+    type: DataTypes.STRING,
+    allowNull: true,
+    comment: 'Path to uploaded blog image'
+  },
+  author_id: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+    references: {
+      model: 'Users',
+      key: 'id'
+    }
+  },
+  category_id: {
+    type: DataTypes.INTEGER,
+    allowNull: true,
+    references: {
+      model: 'Categories',
+      key: 'id'
+    }
+  },
   is_published: {
     type: DataTypes.BOOLEAN,
     defaultValue: false,
   },
-  createdAt: {
-    type: DataTypes.DATE,
-    allowNull: false,
-    defaultValue: DataTypes.NOW,
-  },
-  updatedAt: {
-    type: DataTypes.DATE,
-    allowNull: false,
-    defaultValue: DataTypes.NOW,
-  },
-  title: {
-    type: DataTypes.INTEGER,
-    allowNull: false,
-  },
-
 }, {
   tableName: "Blogs",
-  timestamps: true,
+  timestamps: true, // will auto-create createdAt & updatedAt
 });
 
 module.exports = Blog;

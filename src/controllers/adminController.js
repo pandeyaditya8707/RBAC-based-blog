@@ -1,8 +1,11 @@
 
-const { User, Role, Category, Blog } = require("../models");
-const bcrypt = require('bcrypt');
+const { User, Role, Category, Blog, RoleAccess } = require("../models");
+const bcrypt = require('bcryptjs');
 const { Op } = require('sequelize');
 const { validateCategory } = require("../middleware/validation");
+const { handleBlogImageUpload } = require('../middleware/upload');
+const path = require('path');
+const fs = require('fs');
 
 // --- USERS ---
 exports.getAllUsers = async (req, res) => {
@@ -16,7 +19,7 @@ exports.getAllUsers = async (req, res) => {
       order: [['name', 'ASC']]
     });
 
-    // Render with manual layout
+  
     res.render("admin/layout", { 
       contentPage: '../admin/Users',
       users, 
@@ -29,14 +32,24 @@ exports.getAllUsers = async (req, res) => {
   }
 };
 
-// Create user (AJAX) - unchanged
+// Create user 
 exports.createUser = async (req, res) => {
   try {
     const { username, email, password, roleId } = req.body;
 
-    if (!username || !email || !password || !roleId) {
+    // Check if this is admin registration (no roleId provided)
+    const isAdminRegistration = !roleId;
+    
+    if (!username || !email || !password) {
       return res.status(400).json({ 
-        message: "All fields are required" 
+        message: "Username, email, and password are required" 
+      });
+    }
+
+    // For admin panel user creation, roleId is required
+    if (!isAdminRegistration && !roleId) {
+      return res.status(400).json({ 
+        message: "Role selection is required" 
       });
     }
 
@@ -55,11 +68,26 @@ exports.createUser = async (req, res) => {
       });
     }
 
-    const role = await Role.findByPk(roleId);
-    if (!role) {
-      return res.status(400).json({ 
-        message: "Invalid role selected" 
-      });
+    let finalRoleId;
+    
+    if (isAdminRegistration) {
+      // Auto-assign admin role for admin registration
+      const adminRole = await Role.findOne({ where: { name: 'admin' } });
+      if (!adminRole) {
+        return res.status(500).json({ 
+          message: "Admin role not found in system" 
+        });
+      }
+      finalRoleId = adminRole.id;
+    } else {
+      // Validate provided roleId for admin panel user creation
+      const role = await Role.findByPk(roleId);
+      if (!role) {
+        return res.status(400).json({ 
+          message: "Invalid role selected" 
+        });
+      }
+      finalRoleId = parseInt(roleId);
     }
 
     let hashedPassword = password;
@@ -71,13 +99,13 @@ exports.createUser = async (req, res) => {
       username, 
       email, 
       password: hashedPassword, 
-      role_id: parseInt(roleId)
+      role_id: finalRoleId
     });
 
     const { password: _, ...userWithoutPassword } = user.toJSON();
     
     res.status(201).json({
-      message: "User created successfully",
+      message: isAdminRegistration ? "Admin account created successfully" : "User created successfully",
       user: userWithoutPassword
     });
 
@@ -103,7 +131,7 @@ exports.createUser = async (req, res) => {
   }
 };
 
-// Update user role (AJAX) - unchanged
+// Update user role 
 exports.updateUserRole = async (req, res) => {
   try {
     const { userId, roleId } = req.body;
@@ -132,11 +160,7 @@ exports.updateUserRole = async (req, res) => {
     
     res.json({ 
       message: "User role updated successfully",
-      // user: {
-      //   id: user.id,
-      //   username: user.username,
-      //   roleId: user.role_id
-      // }
+      
     });
 
   } catch (error) {
@@ -147,7 +171,7 @@ exports.updateUserRole = async (req, res) => {
   }
 };
 
-// Delete user (AJAX) - unchanged
+// Delete user  - unchanged
 exports.deleteUser = async (req, res) => {
   try {
     const { userId } = req.body;
@@ -192,28 +216,7 @@ exports.deleteUser = async (req, res) => {
   }
 };
 
-// --- CATEGORIES ---
-/* exports.getCategories = async (req, res) => {
-  try {
-    const categories = await Category.findAll({
-      order: [['name', 'ASC']]
-    });
-    
-   /*  res.render("admin/layout", { 
-      contentPage: '../admin/Categories',
-      categories,
-      title: 'Category Management'
-    }); */
-    //res.render("admin/layout", { 
-  //contentPage: 'Categories',  // ✅ Just 'Categories'
-  //categories,
-  //title: 'Category Management'
-//});
-// } catch (error) {
-  //  console.error("Error fetching categories:", error);
-  //  res.status(500).send("Server error");
-  //}
-//};
+
 exports.getCategories = async (req, res) => {
   try {
     const categories = await Category.findAll({
@@ -221,7 +224,7 @@ exports.getCategories = async (req, res) => {
     });
     
     res.render("admin/layout", { 
-      contentPage: 'Categories',  // This should match the filename: Categories.ejs
+      contentPage: 'Categories',  
       categories,
       title: 'Category Management'
     });
@@ -296,39 +299,12 @@ exports.deleteCategory = async (req, res) => {
   }
 };
 
-// --- BLOGS ---
-/* exports.getBlogs = async (req, res) => {
-  try {
-    const blogs = await Blog.findAll({
-      include: [
-        { model: User, attributes: ["username"] },
-        { model: Category, attributes: ["name"] },
-      ],
-      order: [['createdAt', 'DESC']]
-    });
-    
-    const categories = await Category.findAll({
-      order: [['name', 'ASC']]
-    });
-    const users = await User.findAll({
-      attributes: ['id', 'username'],
-      order: [['username', 'ASC']]
-    });
-    
-    res.render("admin/layout", { 
-      contentPage: '../admin/Blogs',
-      blogs,
-      categories,
-      users,
-      title: 'Blog Management'
-    });
-  } catch (error) {
-    console.error("Error fetching blogs:", error);
-    res.status(500).send("Server error");
-  }
-}; */
+
 exports.getBlogs = async (req, res) => {
   try {
+    console.log("=== ADMIN BLOGS DEBUG ===");
+    console.log("Starting getBlogs function");
+    
     const blogs = await Blog.findAll({
       include: [
         { model: User, attributes: ["username"] },
@@ -337,34 +313,53 @@ exports.getBlogs = async (req, res) => {
       order: [['createdAt', 'DESC']]
     });
     
+    console.log("Blogs fetched:", blogs.length);
+    
     const categories = await Category.findAll({
       order: [['name', 'ASC']]
     });
+    
+    console.log("Categories fetched:", categories.length);
+    
     const users = await User.findAll({
       attributes: ['id', 'username'],
       order: [['username', 'ASC']]
     });
     
+    console.log("Users fetched:", users.length);
+    console.log("About to render admin/layout");
+    
     res.render("admin/layout", { 
-      contentPage: 'Blogs',  // Changed from '../admin/Blogs' to just 'Blogs'
+      contentPage: 'Blogs',  
       blogs,
       categories,
       users,
       title: 'Blog Management'
     });
+    
+    console.log("Render completed successfully");
   } catch (error) {
-    console.error("Error fetching blogs:", error);
-    res.status(500).send("Server error");
+    console.error("=== ERROR in getBlogs ===");
+    console.error("Error details:", error);
+    console.error("Error stack:", error.stack);
+    res.status(500).send("Server error: " + error.message);
   }
 };
 
-exports.createBlog = async (req, res) => {
+exports.createBlog = [handleBlogImageUpload, async (req, res) => {
   try {
     const { title, content, categoryId, authorId } = req.body;
 
     if (!title || !content || !categoryId || !authorId) {
       return res.status(400).json({ 
         message: "All fields are required" 
+      });
+    }
+
+    // Handle upload error
+    if (req.uploadError) {
+      return res.status(400).json({ 
+        message: req.uploadError 
       });
     }
 
@@ -390,6 +385,7 @@ exports.createBlog = async (req, res) => {
       content,
       category_id: categoryId,
       author_id: authorId,
+      image: req.file ? req.file.filename : null
     });
 
     res.status(201).json({
@@ -401,7 +397,7 @@ exports.createBlog = async (req, res) => {
     console.error("Error creating blog:", error);
     res.status(500).json({ message: "Internal server error" });
   }
-};
+}];
 
 exports.deleteBlog = async (req, res) => {
   try {
@@ -425,6 +421,247 @@ exports.deleteBlog = async (req, res) => {
 
   } catch (error) {
     console.error("Error deleting blog:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+// --- ROLES ---
+exports.getRoles = async (req, res) => {
+  try {
+    const roles = await Role.findAll({
+      order: [['name', 'ASC']]
+    });
+    
+    res.render("admin/layout", { 
+      contentPage: 'Roles',  
+      roles,
+      title: 'Role Management'
+    });
+  } catch (error) {
+    console.error("Error fetching roles:", error);
+    res.status(500).send("Server error");
+  }
+};
+
+exports.createRole = async (req, res) => {
+  try {
+    const { name } = req.body;
+    
+    if (!name || !name.trim()) {
+      return res.status(400).json({ 
+        message: "Role name is required" 
+      });
+    }
+
+    const existingRole = await Role.findOne({ 
+      where: { name: name.trim() } 
+    });
+
+    if (existingRole) {
+      return res.status(400).json({ 
+        message: "Role already exists" 
+      });
+    }
+
+    const role = await Role.create({ name: name.trim() });
+    res.status(201).json({
+      message: "Role created successfully",
+      role
+    });
+
+  } catch (error) {
+    console.error("Error creating role:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+exports.deleteRole = async (req, res) => {
+  try {
+    const { roleId } = req.body;
+
+    if (!roleId) {
+      return res.status(400).json({ 
+        message: "Role ID is required" 
+      });
+    }
+
+    const role = await Role.findByPk(roleId);
+    if (!role) {
+      return res.status(404).json({ 
+        message: "Role not found" 
+      });
+    }
+
+    // Check if role is being used by users and get their usernames
+    const assignedUsers = await User.findAll({ 
+      where: { role_id: roleId },
+      attributes: ['username']
+    });
+    
+    if (assignedUsers.length > 0) {
+      const usernames = assignedUsers.map(user => user.username).join(', ');
+      return res.status(400).json({ 
+        message: `Cannot delete role: role is assigned to users: ${usernames}` 
+      });
+    }
+
+    await role.destroy();
+    res.json({ message: "Role deleted successfully" });
+
+  } catch (error) {
+    console.error("Error deleting role:", error);
+    
+    if (error.name === 'SequelizeForeignKeyConstraintError') {
+      return res.status(400).json({ 
+        message: "Cannot delete role: role has associated records" 
+      });
+    }
+
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+// ROLE ACCESS 
+exports.getRoleAccess = async (req, res) => {
+  try {
+    const roles = await Role.findAll({
+      order: [['name', 'ASC']]
+    });
+
+    const roleAccess = await RoleAccess.findAll({
+      include: [{ model: Role, attributes: ["id", "name"] }],
+      order: [['role_id', 'ASC'], ['resource', 'ASC']]
+    });
+    
+    res.render("admin/layout", { 
+      contentPage: '../admin/RoleAccess',  
+      roles,
+      roleAccess,
+      title: 'Role Access Management'
+    });
+  } catch (error) {
+    console.error("Error fetching role access:", error);
+    res.status(500).send("Server error");
+  }
+};
+
+exports.createRoleAccess = async (req, res) => {
+  try {
+    const { roleId, resource, can_read, can_write, can_delete, can_comment } = req.body;
+    
+    if (!roleId || !resource) {
+      return res.status(400).json({ 
+        message: "Role and resource are required" 
+      });
+    }
+
+    const role = await Role.findByPk(roleId);
+    if (!role) {
+      return res.status(400).json({ 
+        message: "Invalid role selected" 
+      });
+    }
+
+    // Check if role access already exists for this role and resource
+    const existingAccess = await RoleAccess.findOne({
+      where: { 
+        role_id: roleId,
+        resource: resource.trim()
+      }
+    });
+
+    if (existingAccess) {
+      return res.status(400).json({ 
+        message: "Role access already exists for this role and resource" 
+      });
+    }
+
+    const roleAccess = await RoleAccess.create({
+      role_id: roleId,
+      resource: resource.trim(),
+      can_read: can_read === 'true' || can_read === true,
+      can_write: can_write === 'true' || can_write === true,
+      can_delete: can_delete === 'true' || can_delete === true,
+      can_comment: can_comment === 'true' || can_comment === true
+    });
+
+    res.status(201).json({
+      message: "Role access created successfully",
+      roleAccess
+    });
+
+  } catch (error) {
+    console.error("Error creating role access:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+exports.updateRoleAccess = async (req, res) => {
+  try {
+    const { accessId, roleId, resource, can_read, can_write, can_delete, can_comment } = req.body;
+    
+    if (!accessId || !roleId || !resource) {
+      return res.status(400).json({ 
+        message: "Access ID, role, and resource are required" 
+      });
+    }
+
+    const roleAccess = await RoleAccess.findByPk(accessId);
+    if (!roleAccess) {
+      return res.status(404).json({ 
+        message: "Role access not found" 
+      });
+    }
+
+    const role = await Role.findByPk(roleId);
+    if (!role) {
+      return res.status(400).json({ 
+        message: "Invalid role selected" 
+      });
+    }
+
+    await roleAccess.update({
+      role_id: roleId,
+      resource: resource.trim(),
+      can_read: can_read === 'true' || can_read === true,
+      can_write: can_write === 'true' || can_write === true,
+      can_delete: can_delete === 'true' || can_delete === true,
+      can_comment: can_comment === 'true' || can_comment === true
+    });
+
+    res.json({
+      message: "Role access updated successfully",
+      roleAccess
+    });
+
+  } catch (error) {
+    console.error("Error updating role access:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+exports.deleteRoleAccess = async (req, res) => {
+  try {
+    const { accessId } = req.body;
+
+    if (!accessId) {
+      return res.status(400).json({ 
+        message: "Access ID is required" 
+      });
+    }
+
+    const roleAccess = await RoleAccess.findByPk(accessId);
+    if (!roleAccess) {
+      return res.status(404).json({ 
+        message: "Role access not found" 
+      });
+    }
+
+    await roleAccess.destroy();
+    res.json({ message: "Role access deleted successfully" });
+
+  } catch (error) {
+    console.error("Error deleting role access:", error);
     res.status(500).json({ message: "Internal server error" });
   }
 };

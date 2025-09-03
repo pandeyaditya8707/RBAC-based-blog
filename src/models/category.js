@@ -12,16 +12,6 @@ const Category = sequelize.define("Category", {
     allowNull: false,
     unique: true,
   },
-  createdAt: {
-    type: DataTypes.DATE,
-    allowNull: false,
-    defaultValue: DataTypes.NOW,
-  },
-  updatedAt: {
-    type: DataTypes.DATE,
-    allowNull: false,
-    defaultValue: DataTypes.NOW,
-  },
 }, {
   tableName: "Categories",
   timestamps: true,

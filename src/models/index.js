@@ -1,4 +1,3 @@
-// src/models/index.js
 const { sequelize } = require("../configs/db");
 
 const User = require("./user");
@@ -7,6 +6,7 @@ const Blog = require("./blog");
 const Category = require("./category");
 const Comment = require("./comment");
 const RoleAccess = require("./roleAccess");
+const PasswordReset = require("./passwordReset");
 
 // Associations
 User.hasMany(Blog, { foreignKey: "author_id" });
@@ -27,4 +27,4 @@ Role.hasMany(User, { foreignKey: "role_id" });
 Role.hasMany(RoleAccess, { foreignKey: "role_id" });
 RoleAccess.belongsTo(Role, { foreignKey: "role_id" });
 
-module.exports = { sequelize, User, Role, Blog, Category, Comment, RoleAccess };
+module.exports = { sequelize, User, Role, Blog, Category, Comment, RoleAccess, PasswordReset };
